@@ -1,0 +1,41 @@
+name: Stockai checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck && pnpm lint && pnpm test
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.104.0
+      - run: supabase start --exclude studio,imgproxy,edge-runtime,vector
+      - name: Tenant isolation and receiving transactions
+        run: docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/foundation.sql
+      - run: node scripts/setup-local.mjs
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright test
+        env:
+          STOCKAI_TEST_DATABASE: '1'
+      - run: pnpm build
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-test-results
+          path: test-results/
+      - run: supabase stop
+        if: always()

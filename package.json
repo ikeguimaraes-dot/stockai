@@ -1,0 +1,19 @@
+{
+  "name": "stockai",
+  "private": true,
+  "packageManager": "pnpm@11.5.2",
+  "scripts": {
+    "dev": "pnpm --filter @stockai/web dev",
+    "build": "pnpm --filter @stockai/web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter @stockai/core test",
+    "lint": "pnpm --filter @stockai/web lint",
+    "test:db": "docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/foundation.sql",
+    "test:e2e": "playwright test",
+    "format": "prettier --write apps packages/core scripts tests *.ts *.json .github/**/*.yml docs README.md"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "prettier": "3.9.7"
+  }
+}

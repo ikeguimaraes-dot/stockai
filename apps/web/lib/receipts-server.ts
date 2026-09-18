@@ -1,0 +1,52 @@
+import 'server-only';
+import { serverClient } from './supabase-server';
+import type { Receipt } from '@stockai/core';
+export async function getWorkspace() {
+  const client = await serverClient();
+  const {
+    data: { user },
+    error: authError,
+  } = await client.auth.getUser();
+  if (authError || !user) throw new Error('UNAUTHENTICATED');
+  const [result, unitResult, orgResult] = await Promise.all([
+    client
+      .from('stockai_receipts')
+      .select(
+        '*,suppliers:stockai_suppliers(name),units:stockai_units(name),receipt_lines:stockai_receipt_lines(*,items:stockai_items(name,base_uom))',
+      )
+      .order('created_at', { ascending: false })
+      .limit(500),
+    client.from('stockai_units').select('id,name'),
+    client.from('stockai_orgs').select('id,name'),
+  ]);
+  if (result.error || unitResult.error || orgResult.error)
+    throw new Error('Não foi possível carregar a operação.');
+  const receipts: Receipt[] = (result.data ?? []).map((r) => ({
+    id: r.id,
+    supplier: r.suppliers?.name ?? 'Fornecedor',
+    category: 'Cadastro manual',
+    invoice: r.invoice_number,
+    unit: r.units?.name ?? '',
+    date: new Date(r.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
+    time: new Date(r.created_at).toLocaleTimeString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    status: r.status as Receipt['status'],
+    lines: r.receipt_lines.map((l) => ({
+      id: l.id,
+      name: l.items?.name ?? 'Insumo',
+      uom: l.items?.base_uom as 'KG' | 'L' | 'UN',
+      invoiced: l.invoiced_qty,
+      counted: l.counted_qty,
+      priceCents: l.unit_price_cents,
+    })),
+  }));
+  return {
+    receipts,
+    units: unitResult.data ?? [],
+    orgs: orgResult.data ?? [],
+    email: user.email ?? '',
+  };
+}

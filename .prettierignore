@@ -1,0 +1,6 @@
+node_modules
+.next
+.next-dev
+pnpm-lock.yaml
+packages/db/types/database.ts
+test-results
