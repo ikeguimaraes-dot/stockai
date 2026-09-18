@@ -40,7 +40,7 @@ Sem Supabase, `/demo` funciona com exemplos persistidos no navegador. `/operacao
 
 - Monorepo pnpm, Next.js 15, React, TypeScript estrito, validação Zod e domínio sem I/O.
 - Login, renovação de sessão, logout e cadastro obrigatório da primeira empresa e gestão de empresas em `/empresas`.
-- 11 tabelas com RLS, papéis por unidade, validade/revogação de associação e chaves estrangeiras compostas para impedir vínculos entre organizações.
+- 12 tabelas com RLS, papéis por unidade, validade/revogação de associação e chaves estrangeiras compostas para impedir vínculos entre organizações.
 - Recebimento manual com identificação da nota, fornecedor e itens, criação idempotente, detecção de nota duplicada.
 - Importação de XML de NF-e modelo 55, leiaute 4.00, com protocolo de autorização informado no arquivo. Prévia, identificação da destinatária por CNPJ, revisão de embalagens, chave única por empresa e XML original imutável.
 - Conferência de falta, excesso e item não entregue; divergência exige aprovação; recebimento conforme fecha automaticamente.
@@ -99,3 +99,9 @@ Em `/operacao`, escolha **Importar XML**, envie a NF-e e revise as unidades. A e
 A conferência usa o valor líquido dos produtos (`vProd - vDesc`) e calcula a falta proporcionalmente, preservando o total exato mesmo com preço unitário fracionário. O total original da NF-e, incluindo seus demais componentes, fica separado. Frete e tributos não são rateados automaticamente. Custos unitários são `numeric(20,8)` em centavos; totais financeiros continuam inteiros.
 
 Aceita XML UTF-8 até 1 MB, até 990 itens, NF-e de saída normal do fornecedor em produção e protocolo `100`/`150`. Recusa eventos, cancelamentos, homologação, notas de ajuste/complemento/devolução e itens que não integram o total. A leitura valida consistência do arquivo; não verifica assinatura digital nem consulta a situação atual na SEFAZ. Conversões de embalagem são revisadas em cada importação; não há catálogo persistente de embalagens nesta etapa.
+
+## Produtos, categorias e CMV
+
+O menu **Produtos** (`/produtos`) reúne produtos cadastrados manualmente ou introduzidos pelos recebimentos. Gestores do grupo podem criar/renomear categorias, cadastrar produtos e editar categoria e **Compõe CMV: Sim/Não**. Busca e filtros ajudam a revisar o catálogo. O cadastro é compartilhado entre as empresas do mesmo grupo; categorias não podem ser vinculadas entre grupos.
+
+Produtos antigos e importados sem revisão ficam com CMV **Não definido** (`null`), sem pressupor Sim ou Não. Ao salvar pelo catálogo, a escolha é obrigatória. Na prévia XML, produtos novos aceitam categoria e CMV; os existentes preservam a classificação atual. Novos recebimentos nunca sobrescrevem essa classificação. Identificação e unidade de produtos existentes ficam preservadas; editar a classificação não altera quantidades, valores fiscais ou créditos. A marcação prepara o catálogo para a apuração de CMV; não implementa por si só o cálculo de consumo/CMV.

@@ -7,7 +7,16 @@ import type { Nfe, NfeMapping } from '@stockai/core/nfe';
 
 type Preview = {
   invoice: Nfe;
-  companies: { id: string; name: string; taxId: string; alreadyImported: boolean }[];
+  categories: { id: string; org_id: string; name: string }[];
+  items: {
+    id: string;
+    org_id: string;
+    name: string;
+    base_uom: string;
+    category_id: string | null;
+    composes_cmv: boolean | null;
+  }[];
+  companies: { id: string; orgId: string; name: string; taxId: string; alreadyImported: boolean }[];
 };
 const money = (cents: number) =>
   (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -19,7 +28,9 @@ export function XmlImport({
   const [xml, setXml] = useState('');
   const [preview, setPreview] = useState<Preview | null>(null);
   const [unitId, setUnitId] = useState('');
-  const [mappings, setMappings] = useState<NfeMapping[]>([]);
+  const [mappings, setMappings] = useState<
+    (NfeMapping & { categoryId?: string; composesCmv?: boolean })[]
+  >([]);
   const [requestId, setRequestId] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -71,7 +82,21 @@ export function XmlImport({
     setBusy(true);
     setError('');
     try {
-      onImported(await send({ action: 'import', xml, unitId, requestId, mappings }));
+      onImported(
+        await send({
+          action: 'import',
+          xml,
+          unitId,
+          requestId,
+          mappings: mappings.map((m) => {
+            const line = preview?.invoice.lines.find((l) => l.number === m.number);
+            const existing = preview?.items.some(
+              (i) => i.org_id === company?.orgId && i.name === line?.name && i.base_uom === m.uom,
+            );
+            return existing ? { number: m.number, uom: m.uom, factor: m.factor } : m;
+          }),
+        }),
+      );
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível importar.');
     } finally {
@@ -125,7 +150,12 @@ export function XmlImport({
               aria-label="Empresa destinatária"
               value={unitId}
               disabled={busy}
-              onChange={(e) => setUnitId(e.target.value)}
+              onChange={(e) => {
+                setUnitId(e.target.value);
+                setMappings((ms) =>
+                  ms.map((m) => ({ number: m.number, uom: m.uom, factor: m.factor })),
+                );
+              }}
             >
               <option value="">Selecione a empresa</option>
               {preview.companies.map((c) => (
@@ -164,9 +194,24 @@ export function XmlImport({
             A conferência calcula diferenças sobre as mercadorias após descontos. Frete, tributos e
             outros valores da nota permanecem separados.
           </p>
+          <p className="muted">
+            Categoria e CMV são salvos nos produtos novos. Você pode criar categorias e revisar os
+            cadastros em{' '}
+            <Link href="/produtos" target="_blank" rel="noreferrer">
+              Produtos
+            </Link>
+            .
+          </p>
           <div className="xml-items">
             {preview.invoice.lines.map((line, index) => {
               const mapping = mappings[index];
+              const existing = preview.items.find(
+                (item) =>
+                  item.org_id === company?.orgId &&
+                  item.name === line.name &&
+                  item.base_uom === mapping.uom,
+              );
+              const categories = preview.categories.filter((c) => c.org_id === company?.orgId);
               return (
                 <div className="xml-item" key={line.number}>
                   <div>
@@ -237,6 +282,85 @@ export function XmlImport({
                           {mapping.uom}
                         </span>
                       )}
+                    </div>
+                  )}
+                  {existing ? (
+                    <div className="xml-classification">
+                      <p>
+                        Categoria:{' '}
+                        <strong>
+                          {categories.find((c) => c.id === existing.category_id)?.name ??
+                            'Sem categoria'}
+                        </strong>{' '}
+                        · Compõe CMV:{' '}
+                        <strong>
+                          {existing.composes_cmv === null
+                            ? 'Não definido'
+                            : existing.composes_cmv
+                              ? 'Sim'
+                              : 'Não'}
+                        </strong>
+                      </p>
+                      <small>
+                        Classificação preservada do cadastro.{' '}
+                        <Link href="/produtos" target="_blank" rel="noreferrer">
+                          Editar em Produtos
+                        </Link>
+                      </small>
+                    </div>
+                  ) : (
+                    <div className="xml-conversion">
+                      <label>
+                        Categoria
+                        <select
+                          aria-label={`Categoria do item ${line.number}`}
+                          value={mapping.categoryId ?? ''}
+                          disabled={busy || !company}
+                          onChange={(e) =>
+                            setMappings((ms) =>
+                              ms.map((m, i) =>
+                                i === index ? { ...m, categoryId: e.target.value || undefined } : m,
+                              ),
+                            )
+                          }
+                        >
+                          <option value="">Sem categoria</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Compõe CMV?
+                        <select
+                          aria-label={`Compõe CMV do item ${line.number}`}
+                          value={
+                            mapping.composesCmv === undefined ? '' : String(mapping.composesCmv)
+                          }
+                          disabled={busy || !company}
+                          onChange={(e) =>
+                            setMappings((ms) =>
+                              ms.map((m, i) =>
+                                i === index
+                                  ? {
+                                      ...m,
+                                      composesCmv:
+                                        e.target.value === ''
+                                          ? undefined
+                                          : e.target.value === 'true',
+                                    }
+                                  : m,
+                              ),
+                            )
+                          }
+                        >
+                          <option value="">Não definido</option>
+                          <option value="true">Sim</option>
+                          <option value="false">Não</option>
+                        </select>
+                      </label>
                     </div>
                   )}
                 </div>

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { parseNfe, mapNfeLines, MAX_NFE_BYTES } from '@stockai/core/nfe';
 import { serverClient } from '@/lib/supabase-server';
+import { getCatalog } from '@/lib/catalog';
 import { getWorkspace } from '@/lib/receipts-server';
 const schema = z.object({
   action: z.enum(['preview', 'import']),
@@ -14,6 +15,8 @@ const schema = z.object({
         number: z.string().regex(/^\d{1,3}$/),
         uom: z.enum(['KG', 'L', 'UN']),
         factor: z.string().max(30),
+        categoryId: z.string().uuid().optional(),
+        composesCmv: z.boolean().optional(),
       }),
     )
     .max(990)
@@ -100,12 +103,17 @@ export async function POST(request: Request) {
       );
     if (duplicateError)
       return failure('Não foi possível verificar se a nota já foi importada.', 503);
-    if (data.action === 'preview')
+    if (data.action === 'preview') {
+      const catalog = await getCatalog();
+      const orgIds = new Set(permitted.map((c) => c.org_id));
       return NextResponse.json(
         {
           invoice,
+          categories: catalog.categories.filter((c) => orgIds.has(c.org_id)),
+          items: catalog.items.filter((i) => orgIds.has(i.org_id)),
           companies: permitted.map((c) => ({
             id: c.id,
+            orgId: c.org_id,
             name: c.name,
             taxId: c.tax_id,
             alreadyImported: (existing ?? []).some((r) => r.unit_id === c.id),
@@ -113,10 +121,29 @@ export async function POST(request: Request) {
         },
         { headers: { 'Cache-Control': 'no-store' } },
       );
+    }
     const company = permitted.find((c) => c.id === data.unitId);
     if (!company || !data.requestId || !data.mappings)
       return failure('Selecione a empresa destinatária e revise todos os itens.');
-    const lines = mapNfeLines(invoice, data.mappings);
+    const mappings = data.mappings;
+    const lines = mapNfeLines(invoice, mappings).map((line) => {
+      const classification = mappings.find((m) => m.number === line.number)!;
+      return {
+        ...line,
+        category_id: classification.categoryId,
+        composes_cmv: classification.composesCmv,
+      };
+    });
+    const reviewed = new Map<string, string>();
+    for (const line of lines) {
+      const key = JSON.stringify([line.name, line.uom]);
+      const value = JSON.stringify([line.category_id ?? null, line.composes_cmv ?? null]);
+      if (reviewed.has(key) && reviewed.get(key) !== value)
+        return failure(
+          `Use a mesma categoria e marcação de CMV nas linhas repetidas de ${line.name}.`,
+        );
+      reviewed.set(key, value);
+    }
     const { data: createdId, error } = await client.rpc('stockai_import_nfe', {
       p_unit: company.id,
       p_request: data.requestId,

@@ -57,6 +57,10 @@ export function CompanyDirectory({
             <LayoutDashboard size={19} />
             Visão geral
           </Link>
+          <Link href="/produtos" className="nav-item">
+            <Boxes size={19} />
+            Produtos
+          </Link>
           <Link href="/empresas" className="nav-item active" aria-current="page">
             <Building2 size={19} />
             Empresas

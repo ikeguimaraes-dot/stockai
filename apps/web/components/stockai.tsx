@@ -302,6 +302,12 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
             </button>
           ))}
           {live && (
+            <Link href="/produtos" className="nav-item">
+              <Boxes size={19} />
+              <span>Produtos</span>
+            </Link>
+          )}
+          {live && (
             <Link href="/empresas" className="nav-item">
               <Building2 size={19} />
               <span>Empresas</span>

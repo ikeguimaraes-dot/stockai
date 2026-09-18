@@ -53,6 +53,8 @@ export type Database = {
       stockai_items: {
         Row: {
           base_uom: string
+          category_id: string | null
+          composes_cmv: boolean | null
           created_at: string
           id: string
           is_active: boolean
@@ -61,6 +63,8 @@ export type Database = {
         }
         Insert: {
           base_uom: string
+          category_id?: string | null
+          composes_cmv?: boolean | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -69,6 +73,8 @@ export type Database = {
         }
         Update: {
           base_uom?: string
+          category_id?: string | null
+          composes_cmv?: boolean | null
           created_at?: string
           id?: string
           is_active?: boolean
@@ -76,6 +82,13 @@ export type Database = {
           org_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "stockai_items_category_scope"
+            columns: ["org_id", "category_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_product_categories"
+            referencedColumns: ["org_id", "id"]
+          },
           {
             foreignKeyName: "stockai_items_org_id_fkey"
             columns: ["org_id"]
@@ -182,6 +195,35 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      stockai_product_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          org_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          org_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          org_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_product_categories_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_orgs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stockai_receipt_lines: {
         Row: {
@@ -565,6 +607,21 @@ export type Database = {
           p_org?: string
           p_tax_id: string
           p_unit?: string
+        }
+        Returns: string
+      }
+      stockai_save_category: {
+        Args: { p_id?: string; p_name: string; p_org: string }
+        Returns: string
+      }
+      stockai_save_product: {
+        Args: {
+          p_category?: string
+          p_cmv?: boolean
+          p_id?: string
+          p_name: string
+          p_org: string
+          p_uom: string
         }
         Returns: string
       }
