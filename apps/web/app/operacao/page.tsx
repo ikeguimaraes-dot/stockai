@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getWorkspace } from '@/lib/receipts-server';
 import { Stockai } from '@/components/stockai';
-import { Setup } from '@/components/access';
+
 export const dynamic = 'force-dynamic';
 export default async function Operation() {
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) redirect('/login');
@@ -12,7 +12,7 @@ export default async function Operation() {
     if (error instanceof Error && error.message === 'UNAUTHENTICATED') redirect('/login');
     throw error;
   }
-  if (!workspace.units.length) return <Setup />;
+  if (!workspace.units.some((u) => u.tax_id && u.legal_name)) redirect('/empresas');
   return (
     <Stockai
       live={{

@@ -25,12 +25,13 @@ jobs:
           version: 2.104.0
       - run: supabase start --exclude studio,imgproxy,edge-runtime,vector
       - name: Tenant isolation and receiving transactions
-        run: docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/foundation.sql
+        run: pnpm test:db
       - run: node scripts/setup-local.mjs
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm exec playwright test
         env:
           STOCKAI_TEST_DATABASE: '1'
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
       - run: pnpm build
       - uses: actions/upload-artifact@v4
         if: failure()

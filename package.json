@@ -8,7 +8,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm --filter @stockai/core test",
     "lint": "pnpm --filter @stockai/web lint",
-    "test:db": "docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/foundation.sql",
+    "test:db": "docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/foundation.sql && docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/companies.sql",
     "test:e2e": "playwright test",
     "format": "prettier --write apps packages/core scripts tests *.ts *.json .github/**/*.yml docs README.md"
   },

@@ -23,17 +23,36 @@ export async function signOut() {
 }
 export async function setup(form: FormData): Promise<{ error: string }> {
   const input = z
-    .object({ org: z.string().trim().min(1).max(120), unit: z.string().trim().min(1).max(80) })
+    .object({
+      name: z.string().trim().min(2).max(80),
+      legalName: z.string().trim().min(2).max(160),
+      taxId: z
+        .string()
+        .transform((v) => v.replace(/[.\/\s-]/g, '').toUpperCase())
+        .pipe(z.string().regex(/^[A-Z0-9]{12}[0-9]{2}$/)),
+      orgId: z.union([z.string().uuid(), z.literal('')]),
+      unitId: z.union([z.string().uuid(), z.literal('')]),
+    })
     .safeParse(Object.fromEntries(form));
-  if (!input.success) return { error: 'Preencha o nome da organização e da unidade.' };
+  if (!input.success) return { error: 'Confira o nome, a razão social e o CNPJ com 14 posições.' };
   const client = await serverClient();
-  const { error } = await client.rpc('stockai_bootstrap_organization', {
-    p_org_name: input.data.org,
-    p_unit_name: input.data.unit,
+  const { error } = await client.rpc('stockai_register_company', {
+    p_name: input.data.name,
+    p_legal_name: input.data.legalName,
+    p_tax_id: input.data.taxId,
+    p_org: input.data.orgId || undefined,
+    p_unit: input.data.unitId || undefined,
   });
   if (error)
     return {
-      error: 'Não foi possível criar a organização. Verifique seu acesso e tente novamente.',
+      error:
+        error.code === '23505'
+          ? 'Já existe uma empresa com esse nome ou CNPJ no grupo.'
+          : error.code === '42501'
+            ? 'Seu acesso não permite cadastrar esta empresa. Peça ao gestor do grupo.'
+            : error.code === '22023'
+              ? error.message
+              : 'Não foi possível salvar a empresa. Tente novamente.',
     };
   redirect('/operacao');
 }

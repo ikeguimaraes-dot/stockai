@@ -13,6 +13,9 @@ export type Receipt = {
   category: string;
   invoice: string;
   unit: string;
+  unitId?: string;
+  companyLegalName?: string;
+  companyTaxId?: string;
   date: string;
   time: string;
   status: ReceiptStatus;

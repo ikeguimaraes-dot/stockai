@@ -435,22 +435,28 @@ export type Database = {
           created_at: string
           id: string
           is_central: boolean
+          legal_name: string | null
           name: string
           org_id: string
+          tax_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           is_central?: boolean
+          legal_name?: string | null
           name: string
           org_id: string
+          tax_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           is_central?: boolean
+          legal_name?: string | null
           name?: string
           org_id?: string
+          tax_id?: string | null
         }
         Relationships: [
           {
@@ -486,6 +492,16 @@ export type Database = {
         Returns: string
       }
       stockai_get_blind_receipt: { Args: { p_receipt: string }; Returns: Json }
+      stockai_register_company: {
+        Args: {
+          p_legal_name: string
+          p_name: string
+          p_org?: string
+          p_tax_id: string
+          p_unit?: string
+        }
+        Returns: string
+      }
       stockai_submit_receipt_count: {
         Args: { p_counts: Json; p_receipt: string }
         Returns: string

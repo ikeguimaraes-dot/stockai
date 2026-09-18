@@ -8,18 +8,19 @@ export async function getWorkspace() {
     error: authError,
   } = await client.auth.getUser();
   if (authError || !user) throw new Error('UNAUTHENTICATED');
-  const [result, unitResult, orgResult] = await Promise.all([
+  const [result, unitResult, orgResult, membershipResult] = await Promise.all([
     client
       .from('stockai_receipts')
       .select(
-        '*,suppliers:stockai_suppliers(name),units:stockai_units(name),receipt_lines:stockai_receipt_lines(*,items:stockai_items(name,base_uom))',
+        '*,suppliers:stockai_suppliers(name),units:stockai_units(name,legal_name,tax_id),receipt_lines:stockai_receipt_lines(*,items:stockai_items(name,base_uom))',
       )
       .order('created_at', { ascending: false })
       .limit(500),
-    client.from('stockai_units').select('id,name'),
+    client.from('stockai_units').select('id,name,org_id,legal_name,tax_id'),
     client.from('stockai_orgs').select('id,name'),
+    client.from('stockai_memberships').select('org_id,unit_id,role'),
   ]);
-  if (result.error || unitResult.error || orgResult.error)
+  if (result.error || unitResult.error || orgResult.error || membershipResult.error)
     throw new Error('Não foi possível carregar a operação.');
   const receipts: Receipt[] = (result.data ?? []).map((r) => ({
     id: r.id,
@@ -27,6 +28,9 @@ export async function getWorkspace() {
     category: 'Cadastro manual',
     invoice: r.invoice_number,
     unit: r.units?.name ?? '',
+    unitId: r.unit_id,
+    companyLegalName: r.units?.legal_name ?? undefined,
+    companyTaxId: r.units?.tax_id ?? undefined,
     date: new Date(r.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
     time: new Date(r.created_at).toLocaleTimeString('pt-BR', {
       timeZone: 'America/Sao_Paulo',
@@ -47,6 +51,7 @@ export async function getWorkspace() {
     receipts,
     units: unitResult.data ?? [],
     orgs: orgResult.data ?? [],
+    memberships: membershipResult.data ?? [],
     email: user.email ?? '',
   };
 }

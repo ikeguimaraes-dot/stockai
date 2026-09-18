@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 if (process.env.STOCKAI_TEST_DATABASE) {
-  const localUrl = readFileSync('apps/web/.env.local', 'utf8').match(
-    /^NEXT_PUBLIC_SUPABASE_URL=(.+)$/m,
-  )?.[1];
+  const localUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ??
+    readFileSync('apps/web/.env.local', 'utf8').match(/^NEXT_PUBLIC_SUPABASE_URL=(.+)$/m)?.[1];
   if (!localUrl || !['localhost', '127.0.0.1'].includes(new URL(localUrl).hostname)) {
     throw new Error('Database browser tests only run against the local Supabase.');
   }
@@ -45,15 +45,19 @@ test('database: login, manual receipt, blind count and durable approval', async 
   await page.getByLabel('E-mail', { exact: true }).fill('gestor@stockai.local');
   await page.getByLabel('Senha', { exact: true }).fill('Stockai.local.2026');
   await page.getByRole('button', { name: 'Entrar na operação' }).click();
-  await page.waitForURL('**/operacao');
-  if (await page.getByRole('heading', { name: 'Vamos organizar sua operação.' }).isVisible()) {
-    await page.getByLabel('Nome da organização').fill('Stockai local');
-    await page.getByLabel('Primeira unidade').fill('Cozinha de testes');
-    await page.getByRole('button', { name: 'Criar operação' }).click();
+  await expect(
+    page.getByRole('heading', { name: /^(Cadastre sua empresa\.|Tudo sob controle\.)$/ }),
+  ).toBeVisible();
+  if (await page.getByRole('heading', { name: 'Cadastre sua empresa.' }).isVisible()) {
+    await page.getByLabel('Nome fantasia').fill('Stockai local');
+    await page.getByLabel('CNPJ', { exact: true }).fill('12345678000195');
+    await page.getByLabel('Razão social').fill('Stockai local Ltda');
+    await page.getByRole('button', { name: 'Salvar empresa e continuar' }).click();
   }
   await expect(page.getByRole('heading', { name: 'Tudo sob controle.' })).toBeVisible();
   await page.getByRole('button', { name: 'Novo recebimento' }).click();
   const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Empresa destinatária').selectOption({ index: 1 });
   await dialog.getByLabel('Fornecedor', { exact: true }).fill('Fornecedor de testes');
   await dialog.getByLabel('Número da nota').fill(String(Date.now()));
   await dialog.getByLabel('Insumo', { exact: true }).fill('Tomate teste');

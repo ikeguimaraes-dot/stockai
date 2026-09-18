@@ -15,7 +15,7 @@ pnpm install
 pnpm dev --port 3100
 ```
 
-Use uma conta do projeto Supabase escolhido. No primeiro acesso ao Stockai, cadastre sua organização e unidade. Os testes integrados de banco são exclusivos do ambiente local.
+Use uma conta do projeto Supabase escolhido. No primeiro acesso ao Stockai, cadastre sua empresa com nome fantasia, razão social e CNPJ. Os testes integrados de banco são exclusivos do ambiente local.
 
 ## Desenvolvimento isolado local
 
@@ -32,14 +32,14 @@ pnpm dev --port 3100
 - Demonstração independente: http://127.0.0.1:3100/demo
 - Acesso exclusivamente local: `gestor@stockai.local` / `Stockai.local.2026`
 
-O script local recusa hosts remotos e escreve somente a URL e a chave publicável no `.env.local`. A chave administrativa local é usada para criar o usuário de desenvolvimento e não é gravada no aplicativo. No primeiro acesso, crie a organização e a unidade. Não use o usuário de desenvolvimento em produção.
+O script local recusa hosts remotos e escreve somente a URL e a chave publicável no `.env.local`. A chave administrativa local é usada para criar o usuário de desenvolvimento e não é gravada no aplicativo. No primeiro acesso, cadastre a primeira empresa. Não use o usuário de desenvolvimento em produção.
 
 Sem Supabase, `/demo` funciona com exemplos persistidos no navegador. `/operacao` exige autenticação e usa o banco; nunca cai silenciosamente para dados de demonstração.
 
 ## Implementado
 
 - Monorepo pnpm, Next.js 15, React, TypeScript estrito, validação Zod e domínio sem I/O.
-- Login, renovação de sessão, logout e criação da primeira organização/unidade.
+- Login, renovação de sessão, logout e cadastro obrigatório da primeira empresa e gestão de empresas em `/empresas`.
 - 10 tabelas com RLS, papéis por unidade, validade/revogação de associação e chaves estrangeiras compostas para impedir vínculos entre organizações.
 - Recebimento manual com identificação da nota, fornecedor e itens, criação idempotente, detecção de nota duplicada.
 - Conferência de falta, excesso e item não entregue; divergência exige aprovação; recebimento conforme fecha automaticamente.
@@ -56,7 +56,7 @@ Esta é uma primeira fatia funcional do produto, **não a implementação integr
 
 O painel considera até os 500 recebimentos mais recentes visíveis ao usuário. A tela de estoque exibe entradas confirmadas; ainda não é saldo operacional, pois saídas, perdas, inventário e estorno não têm fluxo implementado. A estrutura reserva o vínculo de estorno, mas não expõe uma operação de estorno incompleta. Créditos são calculados e criados no fechamento; liquidação e documento de cobrança ainda não têm interface.
 
-O onboarding cria uma organização e uma unidade. Gestão de equipes, convite, novas unidades, organizações múltiplas por usuário e a tela de trabalho de operadores ficam para a próxima etapa. A rota de conferência dedicada já aplica a proteção no servidor; a visão do gestor recebe os dados fiscais para revisão. Os insumos manuais usam KG/L/UN; conversão de embalagens está testada no domínio, mas o cadastro de embalagens ainda não foi conectado.
+O onboarding cria o grupo de acesso e sua primeira empresa. Cada empresa destinatária corresponde a um estabelecimento com CNPJ, armazenado em `stockai_units`; novas empresas podem ser cadastradas pelo gestor do grupo. Notas exigem uma empresa cadastrada e usam seu ID como vínculo. O CNPJ tem validação de formato (sem consulta cadastral externa) e não pode ser trocado após receber notas. Gestão de equipes, convites e a tela de trabalho de operadores ficam para a próxima etapa. A rota de conferência dedicada já aplica a proteção no servidor; a visão do gestor recebe os dados fiscais para revisão. Os insumos manuais usam KG/L/UN; conversão de embalagens está testada no domínio, mas o cadastro de embalagens ainda não foi conectado.
 
 ## Validação
 

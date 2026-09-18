@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Boxes, ArrowRight, ShieldCheck } from 'lucide-react';
-import { signIn, setup } from '@/app/actions';
+import { signIn, setup, signOut } from '@/app/actions';
 export function Access({ configured }: { configured: boolean }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -103,42 +103,131 @@ export function Access({ configured }: { configured: boolean }) {
     </div>
   );
 }
-export function Setup() {
+export function Setup({
+  companies = [],
+  orgs = [],
+  hasAccess = false,
+}: {
+  companies?: import('@/lib/company').Company[];
+  orgs?: { id: string; name: string }[];
+  hasAccess?: boolean;
+}) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [selected, setSelected] = useState(companies[0]?.id ?? '');
+  const company = companies.find((c) => c.id === selected);
+  const canCreate = orgs.length > 0 || !hasAccess;
   return (
     <div className="setup-page">
       <div className="panel access-form">
         <div>
           <span className="eyebrow">PRIMEIRO PASSO</span>
-          <h2>Vamos organizar sua operação.</h2>
-          <p>Crie sua organização e a primeira unidade.</p>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              setBusy(true);
-              const result = await setup(new FormData(e.currentTarget));
-              setError(result.error);
-              setBusy(false);
-            }}
-          >
-            <label>
-              Nome da organização
-              <input name="org" required placeholder="Grupo empresarial" maxLength={120} />
-            </label>
-            <label>
-              Primeira unidade
-              <input name="unit" required placeholder="Ex.: Jardins" maxLength={80} />
-            </label>
-            {error && (
-              <p role="alert" className="error">
-                {error}
-              </p>
-            )}
-            <button className="primary full" disabled={busy}>
-              {busy ? 'Preparando...' : 'Criar operação'}
-              <ArrowRight size={17} />
-            </button>
+          <h2>Cadastre sua empresa.</h2>
+          <p>
+            Informe a empresa destinatária das notas. Cada recebimento ficará vinculado ao seu CNPJ.
+          </p>
+          {!companies.length && !canCreate ? (
+            <p role="status">Peça ao gestor para cadastrar a empresa e liberar sua operação.</p>
+          ) : (
+            <form
+              key={selected}
+              onChange={() => setError('')}
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setBusy(true);
+                setError('');
+                try {
+                  const result = await setup(new FormData(e.currentTarget));
+                  setError(result.error);
+                } catch {
+                  setError('Não foi possível salvar. Tente novamente.');
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              {companies.length > 0 && (
+                <label>
+                  Empresa a cadastrar ou atualizar
+                  <select value={selected} onChange={(e) => setSelected(e.target.value)}>
+                    {companies.map((c) => (
+                      <option value={c.id} key={c.id}>
+                        {c.name}
+                        {!c.tax_id ? ' · cadastro pendente' : ''}
+                      </option>
+                    ))}
+                    {canCreate && <option value="">Cadastrar outra empresa</option>}
+                  </select>
+                </label>
+              )}
+              <input type="hidden" name="unitId" value={selected} />
+              {company ? (
+                <input type="hidden" name="orgId" value={company.org_id} />
+              ) : orgs.length > 0 ? (
+                <label>
+                  Grupo
+                  <select name="orgId">
+                    {orgs.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : (
+                <input type="hidden" name="orgId" value="" />
+              )}
+              <label>
+                Nome fantasia
+                <input
+                  name="name"
+                  required
+                  minLength={2}
+                  defaultValue={company?.name}
+                  placeholder="Ex.: Restaurante Jardins"
+                  maxLength={80}
+                />
+              </label>
+              <label>
+                Razão social
+                <input
+                  name="legalName"
+                  required
+                  minLength={2}
+                  defaultValue={company?.legal_name ?? ''}
+                  placeholder="Nome empresarial da nota fiscal"
+                  maxLength={160}
+                />
+              </label>
+              <label>
+                CNPJ
+                <input
+                  name="taxId"
+                  required
+                  defaultValue={company?.tax_id ?? ''}
+                  placeholder="00.000.000/0001-00"
+                  maxLength={18}
+                  autoCapitalize="characters"
+                />
+              </label>
+              {error && (
+                <p role="alert" className="error">
+                  {error}
+                </p>
+              )}
+              <button className="primary full" disabled={busy}>
+                {busy ? 'Salvando...' : 'Salvar empresa e continuar'}
+                <ArrowRight size={17} />
+              </button>
+            </form>
+          )}
+          {companies.some((c) => c.tax_id) && (
+            <Link className="demo-link" href="/operacao">
+              Voltar à operação <ArrowRight size={15} />
+            </Link>
+          )}
+          <form action={signOut}>
+            <button className="text-button">Sair da conta</button>
           </form>
         </div>
       </div>

@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { formatCnpj, type Company } from '@/lib/company';
 import { signOut } from '@/app/actions';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -57,6 +58,9 @@ const receiptSchema = z.object({
   category: z.string(),
   invoice: z.string().min(1),
   unit: z.string(),
+  unitId: z.string().optional(),
+  companyLegalName: z.string().optional(),
+  companyTaxId: z.string().optional(),
   date: z.string(),
   time: z.string(),
   status: z.enum(['counting', 'pending_approval', 'closed']),
@@ -84,7 +88,7 @@ function Badge({ status }: { status: Receipt['status'] }) {
 
 type LiveWorkspace = {
   initialReceipts: Receipt[];
-  units: { id: string; name: string }[];
+  units: Company[];
   orgName: string;
   email: string;
 };
@@ -92,7 +96,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
   const [page, setPage] = useState<Page>('overview');
   const [receipts, setReceipts] = useState<Receipt[]>(live?.initialReceipts ?? demoReceipts);
   const [ready, setReady] = useState(false);
-  const [unit, setUnit] = useState('Todas as unidades');
+  const [unit, setUnit] = useState('Todas as empresas');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [selected, setSelected] = useState<string | null>(null);
@@ -133,7 +137,9 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
     setFilter('all');
     setMobile(false);
   };
-  const scoped = receipts.filter((r) => unit === 'Todas as unidades' || r.unit === unit);
+  const scoped = receipts.filter(
+    (r) => unit === 'Todas as empresas' || (r.unitId ?? r.unit) === unit,
+  );
   const filtered = scoped.filter(
     (r) =>
       `${r.supplier} ${r.invoice} ${r.category}`.toLowerCase().includes(search.toLowerCase()) &&
@@ -180,8 +186,10 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
   const createReceipt = async (receipt: Receipt) => {
     let id = receipt.id;
     if (live) {
-      const unitId = live.units.find((u) => u.name === receipt.unit)?.id;
-      if (!unitId) throw new Error('Selecione uma unidade válida.');
+      const unitId = live.units.find(
+        (u) => u.id === receipt.unitId && u.tax_id && u.legal_name,
+      )?.id;
+      if (!unitId) throw new Error('Selecione uma empresa cadastrada.');
       const result = await mutate({
         action: 'create',
         requestId: receipt.id,
@@ -203,7 +211,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
   };
   const exportData = () => {
     const rows = [
-      ['Fornecedor', 'Nota', 'Unidade', 'Status', 'Fiscal (R$)', 'A pagar (R$)', 'Crédito (R$)'],
+      ['Fornecedor', 'Nota', 'Empresa', 'Status', 'Fiscal (R$)', 'A pagar (R$)', 'Crédito (R$)'],
       ...filtered.map((r) => {
         const t = receiptTotals(r);
         return [
@@ -287,6 +295,12 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
               {id === 'inbox' && pending.length > 0 && <b>{pending.length}</b>}
             </button>
           ))}
+          {live && (
+            <Link href="/empresas" className="nav-item">
+              <Building2 size={19} />
+              <span>Empresas</span>
+            </Link>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <div className="side-note">
@@ -379,15 +393,17 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
           <div className="toolbar">
             <label className="select-wrap">
               <Building2 size={16} />
-              <select aria-label="Unidade" value={unit} onChange={(e) => setUnit(e.target.value)}>
-                <option>Todas as unidades</option>
+              <select aria-label="Empresa" value={unit} onChange={(e) => setUnit(e.target.value)}>
+                <option>Todas as empresas</option>
                 {(
                   live?.units ?? [
                     { id: 'j', name: 'Jardins' },
                     { id: 'i', name: 'Itaim' },
                   ]
                 ).map((u) => (
-                  <option key={u.id}>{u.name}</option>
+                  <option key={u.id} value={live ? u.id : u.name}>
+                    {u.name}
+                  </option>
                 ))}
               </select>
               <ChevronDown size={14} />
@@ -684,7 +700,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
       )}
       {create && (
         <NewReceipt
-          units={live?.units.map((u) => u.name)}
+          units={live?.units.filter((u) => u.tax_id && u.legal_name)}
           onClose={() => setCreate(false)}
           onCreate={createReceipt}
         />
@@ -756,7 +772,7 @@ function ReceiptTable({
         <thead>
           <tr>
             <th>FORNECEDOR / NOTA</th>
-            <th>UNIDADE</th>
+            <th>EMPRESA</th>
             <th>RECEBIDO EM</th>
             <th>VALOR DA NOTA</th>
             <th>STATUS</th>
@@ -792,6 +808,7 @@ function ReceiptTable({
                   <Building2 size={13} />
                   {r.unit}
                 </span>
+                {r.companyTaxId && <small>{formatCnpj(r.companyTaxId)}</small>}
               </td>
               <td>
                 <span>
@@ -1049,6 +1066,11 @@ function ReceiptDialog({
           NF {receipt.invoice} · {receipt.unit}
         </div>
         <h2>{receipt.supplier}</h2>
+        {receipt.companyTaxId && (
+          <p>
+            Destinatária: {receipt.companyLegalName} · CNPJ {formatCnpj(receipt.companyTaxId)}
+          </p>
+        )}
         <Badge status={receipt.status} />
       </div>
       {counting ? (
@@ -1201,11 +1223,14 @@ function ReceiptDialog({
 function NewReceipt({
   onClose,
   onCreate,
-  units = ['Jardins', 'Itaim'],
+  units = [
+    { id: 'Jardins', name: 'Jardins', tax_id: null, legal_name: null, org_id: 'demo' },
+    { id: 'Itaim', name: 'Itaim', tax_id: null, legal_name: null, org_id: 'demo' },
+  ],
 }: {
   onClose: () => void;
   onCreate: (r: Receipt) => Promise<void>;
-  units?: string[];
+  units?: Company[];
 }) {
   const [lines, setLines] = useState([
     { id: crypto.randomUUID(), name: '', uom: 'KG' as 'KG' | 'L' | 'UN', invoiced: '', price: '' },
@@ -1224,7 +1249,10 @@ function NewReceipt({
         supplier: String(data.get('supplier')).trim(),
         category: 'Cadastro manual',
         invoice: String(data.get('invoice')).trim(),
-        unit: data.get('unit'),
+        unit: units.find((u) => u.id === data.get('unit'))?.name ?? '',
+        unitId: data.get('unit'),
+        companyTaxId: units.find((u) => u.id === data.get('unit'))?.tax_id ?? undefined,
+        companyLegalName: units.find((u) => u.id === data.get('unit'))?.legal_name ?? undefined,
         date: now.toLocaleDateString('en-CA'),
         time: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         status: 'counting',
@@ -1255,10 +1283,26 @@ function NewReceipt({
       <div className="dialog-heading">
         <div className="eyebrow">UMA NOVA ENTRADA, TUDO NO LUGAR</div>
         <h2>Registrar recebimento</h2>
-        <p>Cadastre os dados da nota para iniciar a conferência.</p>
+        <p>
+          Escolha a empresa destinatária e cadastre os dados da nota para iniciar a conferência.
+        </p>
       </div>
       <form onSubmit={submit}>
         <div className="form-grid">
+          <label className="company-field">
+            Empresa destinatária
+            <select name="unit" required defaultValue="">
+              <option value="" disabled>
+                Selecione a empresa da nota
+              </option>
+              {units.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                  {u.tax_id ? ` · ${formatCnpj(u.tax_id)}` : ''}
+                </option>
+              ))}
+            </select>
+          </label>
           <label>
             Fornecedor
             <input name="supplier" required placeholder="Nome do fornecedor" maxLength={100} />
@@ -1266,14 +1310,6 @@ function NewReceipt({
           <label>
             Número da nota
             <input name="invoice" required placeholder="000.000" maxLength={40} />
-          </label>
-          <label>
-            Unidade
-            <select name="unit">
-              {units.map((u) => (
-                <option key={u}>{u}</option>
-              ))}
-            </select>
           </label>
         </div>
         <div className="form-section-title">
