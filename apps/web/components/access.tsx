@@ -108,23 +108,31 @@ export function Setup({
   companies = [],
   orgs = [],
   hasAccess = false,
+  initialCompanyId,
+  onSaved,
+  onCancel,
 }: {
   companies?: import('@/lib/company').Company[];
   orgs?: { id: string; name: string }[];
   hasAccess?: boolean;
+  initialCompanyId?: string;
+  onSaved?: () => void;
+  onCancel?: () => void;
 }) {
   const router = useRouter();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [selected, setSelected] = useState(companies[0]?.id ?? '');
+  const [selected, setSelected] = useState(initialCompanyId ?? companies[0]?.id ?? '');
   const company = companies.find((c) => c.id === selected);
   const canCreate = orgs.length > 0 || !hasAccess;
   return (
     <div className="setup-page">
       <div className="panel access-form">
         <div>
-          <span className="eyebrow">PRIMEIRO PASSO</span>
-          <h2>Cadastre sua empresa.</h2>
+          <span className="eyebrow">{onCancel ? 'EMPRESAS' : 'PRIMEIRO PASSO'}</span>
+          <h2>
+            {onCancel ? (company ? 'Editar empresa' : 'Nova empresa') : 'Cadastre sua empresa.'}
+          </h2>
           <p>
             Informe a empresa destinatária das notas. Cada recebimento ficará vinculado ao seu CNPJ.
           </p>
@@ -144,7 +152,8 @@ export function Setup({
                     setError(result.error);
                     return;
                   }
-                  router.replace('/operacao');
+                  if (onSaved) onSaved();
+                  else router.replace('/operacao');
                   router.refresh();
                 } catch {
                   setError('Não foi possível salvar. Tente novamente.');
@@ -153,7 +162,7 @@ export function Setup({
                 }
               }}
             >
-              {companies.length > 0 && (
+              {initialCompanyId === undefined && companies.length > 0 && (
                 <label>
                   Empresa a cadastrar ou atualizar
                   <select value={selected} onChange={(e) => setSelected(e.target.value)}>
@@ -223,12 +232,17 @@ export function Setup({
                 </p>
               )}
               <button className="primary full" disabled={busy}>
-                {busy ? 'Salvando...' : 'Salvar empresa e continuar'}
+                {busy ? 'Salvando...' : onCancel ? 'Salvar empresa' : 'Salvar empresa e continuar'}
                 <ArrowRight size={17} />
               </button>
             </form>
           )}
-          {companies.some((c) => c.tax_id) && (
+          {onCancel && (
+            <button className="demo-link full" type="button" onClick={onCancel} disabled={busy}>
+              Voltar às empresas
+            </button>
+          )}
+          {!onCancel && companies.some((c) => c.tax_id) && (
             <Link className="demo-link" href="/operacao">
               Voltar à operação <ArrowRight size={15} />
             </Link>

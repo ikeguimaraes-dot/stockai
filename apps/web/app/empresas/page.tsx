@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getWorkspace } from '@/lib/receipts-server';
 import { Setup } from '@/components/access';
+import { CompanyDirectory } from '@/components/companies';
 export const dynamic = 'force-dynamic';
 export default async function Companies() {
   let workspace;
@@ -19,5 +20,14 @@ export default async function Companies() {
   const orgs = workspace.orgs.filter((o) =>
     managers.some((m) => m.org_id === o.id && !m.unit_id && m.role !== 'unit_manager'),
   );
-  return <Setup companies={companies} orgs={orgs} hasAccess={workspace.memberships.length > 0} />;
+  if (!workspace.units.some((u) => u.tax_id))
+    return <Setup companies={companies} orgs={orgs} hasAccess={workspace.memberships.length > 0} />;
+  return (
+    <CompanyDirectory
+      companies={workspace.units}
+      editableIds={companies.map((c) => c.id)}
+      orgs={orgs}
+      email={workspace.email}
+    />
+  );
 }
