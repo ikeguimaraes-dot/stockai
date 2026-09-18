@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Boxes, ArrowRight, ShieldCheck } from 'lucide-react';
 import { signIn, setup, signOut } from '@/app/actions';
 export function Access({ configured }: { configured: boolean }) {
@@ -112,6 +113,7 @@ export function Setup({
   orgs?: { id: string; name: string }[];
   hasAccess?: boolean;
 }) {
+  const router = useRouter();
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState(companies[0]?.id ?? '');
@@ -138,7 +140,12 @@ export function Setup({
                 setError('');
                 try {
                   const result = await setup(new FormData(e.currentTarget));
-                  setError(result.error);
+                  if (result.error) {
+                    setError(result.error);
+                    return;
+                  }
+                  router.replace('/operacao');
+                  router.refresh();
                 } catch {
                   setError('Não foi possível salvar. Tente novamente.');
                 } finally {

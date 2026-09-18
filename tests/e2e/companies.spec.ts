@@ -40,6 +40,11 @@ test('database: first company is required and invoices retain the selected desti
   await page.getByRole('button', { name: 'Salvar empresa e continuar' }).click();
   await expect(page.getByRole('heading', { name: 'Tudo sob controle.' })).toBeVisible();
   await page.getByRole('link', { name: 'Empresas', exact: true }).click();
+  await page.getByLabel('Nome fantasia').fill('Empresa Centro Matriz');
+  await page.getByRole('button', { name: 'Salvar empresa e continuar' }).click();
+  await expect(page.getByRole('heading', { name: 'Tudo sob controle.' })).toBeVisible();
+  await expect(page.locator('p[role=alert]')).toHaveCount(0);
+  await page.getByRole('link', { name: 'Empresas', exact: true }).click();
   await page.getByLabel('Empresa a cadastrar ou atualizar').selectOption('');
   await page.getByLabel('Nome fantasia').fill('Empresa Jardins');
   await page.getByLabel('Razão social').fill('Empresa Jardins Ltda');

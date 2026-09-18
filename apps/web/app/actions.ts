@@ -1,6 +1,7 @@
 'use server';
 import { serverClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 export async function signIn(form: FormData): Promise<{ error: string }> {
   const input = z
@@ -21,7 +22,7 @@ export async function signOut() {
   await client.auth.signOut();
   redirect('/login');
 }
-export async function setup(form: FormData): Promise<{ error: string }> {
+export async function setup(form: FormData): Promise<{ error: string | null }> {
   const input = z
     .object({
       name: z.string().trim().min(2).max(80),
@@ -54,5 +55,7 @@ export async function setup(form: FormData): Promise<{ error: string }> {
               ? error.message
               : 'Não foi possível salvar a empresa. Tente novamente.',
     };
-  redirect('/operacao');
+  revalidatePath('/operacao');
+  revalidatePath('/empresas');
+  return { error: null };
 }
