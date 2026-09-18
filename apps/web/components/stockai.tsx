@@ -426,7 +426,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
                   value={money(credits)}
                   icon={<Wallet size={18} />}
                   detail="Valores de faltas a cobrar dos fornecedores"
-                  accent="brand-accent"
+                  accent="violet"
                 />
               </div>
               <div className="overview-grid">
@@ -716,7 +716,7 @@ function Metric({
   accent: string;
 }) {
   return (
-    <section className="metric">
+    <section className={`metric metric-${accent}`}>
       <div>
         <span>{label}</span>
         <i className={accent}>{icon}</i>

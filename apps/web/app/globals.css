@@ -1684,7 +1684,10 @@ tbody tr:hover {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
   }
@@ -1856,5 +1859,244 @@ tbody tr:hover {
   }
   .access-form form {
     margin-top: 25px;
+  }
+}
+
+/* Color and motion: blue remains the brand, supporting colors give each metric a voice. */
+body {
+  background: radial-gradient(ellipse at 95% 0%, #e9e4ff 0, transparent 42%), var(--bg);
+}
+.sidebar {
+  background:
+    radial-gradient(ellipse at 0% 0%, #2456b0, transparent 60%),
+    linear-gradient(165deg, #153971, #172952 75%, #302a64);
+}
+.nav-item {
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+.nav-item.active {
+  background: linear-gradient(110deg, #3479f3, #6454da);
+  box-shadow: 0 5px 18px #071c4030;
+  color: white;
+}
+.nav-item.active svg {
+  color: white;
+}
+.workspace small,
+.side-note p,
+.profile small,
+.nav-label {
+  color: #b2c6e5;
+}
+.page-heading .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
+  border: 1px solid #d9d9ff;
+  border-radius: 20px;
+  color: #6551c4;
+  background: #f0edff;
+}
+.page-heading .eyebrow::before {
+  content: '✦';
+  font-size: 12px;
+}
+.primary {
+  background: linear-gradient(115deg, #2463eb, #6351e8);
+  box-shadow: 0 5px 14px #365ee52b;
+  border-radius: 9px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+.primary:hover:not(:disabled) {
+  background: linear-gradient(115deg, #1d55d8, #5842d7);
+  box-shadow: 0 8px 22px #365ee543;
+  transform: translateY(-2px);
+}
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.primary:disabled {
+  transform: none;
+  animation: none;
+}
+.page-heading > .primary {
+  position: relative;
+}
+.page-heading > .primary::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border: 2px solid #7374ed;
+  border-radius: 14px;
+  opacity: 0;
+  pointer-events: none;
+  animation: action-pulse 6s ease-out 1s 3;
+}
+.page-heading > .primary:hover::after {
+  animation: none;
+}
+.metric {
+  --metric-color: #2563eb;
+  --metric-tint: #eef4ff;
+  position: relative;
+  border-color: #dce5f5;
+  border-radius: 13px;
+  border-top: 3px solid var(--metric-color);
+  background: linear-gradient(125deg, white 30%, var(--metric-tint));
+  box-shadow: 0 4px 16px #25437506;
+  animation: card-arrive 550ms backwards;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+.metric-blue {
+  --metric-color: #087caa;
+  --metric-tint: #e6f9ff;
+  animation-delay: 65ms;
+}
+.metric-amber {
+  --metric-color: #c65a23;
+  --metric-tint: #fff0e3;
+  animation-delay: 130ms;
+}
+.metric-violet {
+  --metric-color: #7c3aed;
+  --metric-tint: #f2eaff;
+  animation-delay: 195ms;
+}
+.metric i.brand-accent,
+.metric i.blue,
+.metric i.amber,
+.metric i.violet {
+  background: var(--metric-color);
+  color: white;
+  border-radius: 9px;
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--metric-color) 20%, transparent);
+}
+.metric p span,
+.metric p span.amber {
+  background: var(--metric-color);
+}
+.metric > div,
+.metric p {
+  color: #526580;
+}
+.panel {
+  border-radius: 13px;
+  box-shadow: 0 5px 22px #25437505;
+}
+.overview-grid {
+  animation: card-arrive 600ms 180ms backwards;
+}
+.attention {
+  background: radial-gradient(ellipse at top right, #e9ddff, transparent 75%), #fcfaff;
+  border-color: #e2d6fb;
+}
+.attention-icon {
+  color: #7c3aed;
+  background: #eee3ff;
+  border-color: #dbc4ff;
+  transform: rotate(-6deg);
+}
+.attention-icon > span {
+  background: #fb923c;
+}
+.attention .count-pill {
+  background: #7c3aed;
+  color: white;
+  border-color: #7c3aed;
+}
+.attention .full {
+  background: #f3eaff;
+  color: #6d28d9;
+  border-color: #dbc4ff;
+}
+.attention .full:hover {
+  background: #eaddff;
+}
+.attention-value strong {
+  color: #6d28d9;
+}
+.chart-foot i {
+  width: 7px;
+  height: 7px;
+  box-shadow: 0 0 0 3px #e6eeff;
+}
+.supplier-icon.rose {
+  background: #ffe7ed;
+  color: #c7466b;
+}
+.supplier-icon.blue {
+  background: #e1f5ff;
+  color: #087eaf;
+}
+.supplier-icon.amber {
+  background: #fff0d6;
+  color: #a86b10;
+}
+.text-button svg,
+.secondary svg {
+  transition: transform 180ms ease;
+}
+.text-button:hover svg,
+.attention .secondary:hover svg {
+  transform: translateX(3px);
+}
+.toast {
+  animation: card-arrive 250ms ease-out;
+}
+.access-story {
+  background:
+    radial-gradient(ellipse at 10% 15%, #285cc2, transparent 60%),
+    radial-gradient(ellipse at 90% 90%, #6140a4, transparent 55%), #122c59;
+}
+.access-story .eyebrow,
+.access-story p,
+.access-story > small {
+  color: #c2d3f3;
+}
+.access-art {
+  background: radial-gradient(ellipse at center, #7d9cff30, transparent 75%);
+  border-color: #a8c4ff30;
+}
+@media (hover: hover) {
+  .metric:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px #25437512;
+  }
+  .nav-item:hover {
+    transform: translateX(2px);
+  }
+}
+@keyframes card-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes action-pulse {
+  0%,
+  28%,
+  100% {
+    opacity: 0;
+    transform: scale(1);
+  }
+  5% {
+    opacity: 0.45;
+  }
+  24% {
+    opacity: 0;
+    transform: scale(1.07, 1.3);
   }
 }
