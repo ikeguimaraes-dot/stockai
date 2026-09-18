@@ -22,7 +22,7 @@ export function BlindCount({
           <Boxes size={23} />
         </div>
         <h1>{receipt.supplier}</h1>
-        <p style={{ margin: '8px 0 20px', color: '#809174' }}>
+        <p style={{ margin: '8px 0 20px', color: 'var(--muted)' }}>
           {receipt.unit} · Conferência de mercadoria
         </p>
         {done ? (

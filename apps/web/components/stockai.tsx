@@ -405,7 +405,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
                   value={money(total)}
                   icon={<ArrowDownLeft size={18} />}
                   detail={`${scoped.length} notas registradas no período`}
-                  accent="green"
+                  accent="brand-accent"
                 />
                 <Metric
                   label="Recebimentos concluídos"
@@ -426,7 +426,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
                   value={money(credits)}
                   icon={<Wallet size={18} />}
                   detail="Valores de faltas a cobrar dos fornecedores"
-                  accent="green"
+                  accent="brand-accent"
                 />
               </div>
               <div className="overview-grid">
@@ -572,7 +572,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
                     </div>
                     <div>
                       <span>Crédito identificado</span>
-                      <strong className="green-text">
+                      <strong className="accent-text">
                         {money(list.reduce((n, r) => n + receiptTotals(r).credit, 0))}
                       </strong>
                     </div>
@@ -618,7 +618,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
                         {r.unit}
                       </p>
                     </div>
-                    <span className="green-text">{money(receiptTotals(r).credit)} em crédito</span>
+                    <span className="accent-text">{money(receiptTotals(r).credit)} em crédito</span>
                     <ChevronRight size={19} />
                   </button>
                 ))
@@ -860,8 +860,8 @@ function ReceiptChart({
       >
         <defs>
           <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#168367" stopOpacity=".17" />
-            <stop offset="100%" stopColor="#168367" stopOpacity=".015" />
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity=".17" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity=".015" />
           </linearGradient>
         </defs>
         {[0, 1, 2, 3].map((i) => (
@@ -871,7 +871,7 @@ function ReceiptChart({
               x2="680"
               y1={30 + i * 45}
               y2={30 + i * 45}
-              stroke="#e9edeb"
+              stroke="var(--line)"
               strokeDasharray="3 5"
             />
             <text x="0" y={34 + i * 45}>
@@ -880,14 +880,20 @@ function ReceiptChart({
           </g>
         ))}
         <path d={`${path} L 680,165 L 55,165 Z`} fill="url(#chartFill)" />
-        <path d={path} fill="none" stroke="#20836a" strokeWidth="2.5" strokeLinejoin="round" />
+        <path
+          d={path}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
         {values.map((v, i) => (
           <g key={i}>
             <circle
               cx={55 + (i * 625) / (n - 1)}
               cy={165 - (v / max) * 135}
               r="3.5"
-              fill="#20836a"
+              fill="var(--accent)"
               stroke="white"
               strokeWidth="2"
             >
@@ -1107,7 +1113,7 @@ function ReceiptDialog({
             </div>
             <div>
               <span>Crédito por falta</span>
-              <strong className="green-text">{money(t.credit)}</strong>
+              <strong className="accent-text">{money(t.credit)}</strong>
               <small>Pendência com fornecedor</small>
             </div>
             <div>
@@ -1135,7 +1141,7 @@ function ReceiptDialog({
                     </td>
                     <td>{qty(line.invoiced)}</td>
                     <td>{qty(line.counted ?? 0)}</td>
-                    <td className={line.counted !== line.invoiced ? 'amber-text' : 'green-text'}>
+                    <td className={line.counted !== line.invoiced ? 'amber-text' : 'accent-text'}>
                       {qty((line.counted ?? 0) - line.invoiced)} {line.uom}
                     </td>
                   </tr>
