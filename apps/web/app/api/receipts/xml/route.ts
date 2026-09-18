@@ -57,7 +57,8 @@ async function body(request: Request) {
   }
 }
 export async function POST(request: Request) {
-  const allowedOrigin = process.env.APP_ORIGIN ?? new URL(request.url).origin;
+  const allowedOrigin =
+    process.env.APP_ORIGIN ?? `${new URL(request.url).protocol}//${request.headers.get('host')}`;
   if (request.headers.get('origin') !== allowedOrigin) return failure('Origem não permitida.', 403);
   try {
     const client = await serverClient();
