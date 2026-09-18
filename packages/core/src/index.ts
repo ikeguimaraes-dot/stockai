@@ -6,6 +6,7 @@ export type ReceiptLine = {
   invoiced: number;
   counted: number | null;
   priceCents: number;
+  fiscalTotalCents?: number;
 };
 export type Receipt = {
   id: string;
@@ -16,6 +17,9 @@ export type Receipt = {
   unitId?: string;
   companyLegalName?: string;
   companyTaxId?: string;
+  accessKey?: string;
+  invoiceSeries?: string;
+  invoiceTotalCents?: number;
   date: string;
   time: string;
   status: ReceiptStatus;
@@ -25,15 +29,21 @@ export const lineTotals = (line: ReceiptLine) => {
   if (
     !Number.isFinite(line.invoiced) ||
     line.invoiced <= 0 ||
-    !Number.isSafeInteger(line.priceCents) ||
+    !Number.isFinite(line.priceCents) ||
     line.priceCents < 0 ||
+    (line.fiscalTotalCents !== undefined &&
+      (!Number.isSafeInteger(line.fiscalTotalCents) || line.fiscalTotalCents < 0)) ||
     (line.counted !== null && (!Number.isFinite(line.counted) || line.counted < 0))
   )
     throw new Error('Quantidade ou preço inválido.');
-  const fiscal = Math.round(line.invoiced * line.priceCents);
+  const fiscal = line.fiscalTotalCents ?? Math.round(line.invoiced * line.priceCents);
   const physical = line.counted;
   const payable =
-    physical === null ? null : Math.round(Math.min(physical, line.invoiced) * line.priceCents);
+    physical === null
+      ? null
+      : line.fiscalTotalCents === undefined
+        ? Math.round(Math.min(physical, line.invoiced) * line.priceCents)
+        : Math.round((Math.min(physical, line.invoiced) / line.invoiced) * fiscal);
   return {
     fiscal,
     physical,

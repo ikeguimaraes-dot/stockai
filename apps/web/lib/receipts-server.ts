@@ -25,7 +25,10 @@ export async function getWorkspace() {
   const receipts: Receipt[] = (result.data ?? []).map((r) => ({
     id: r.id,
     supplier: r.suppliers?.name ?? 'Fornecedor',
-    category: 'Cadastro manual',
+    category: r.access_key ? 'XML NF-e' : 'Cadastro manual',
+    accessKey: r.access_key ?? undefined,
+    invoiceSeries: r.invoice_series ?? undefined,
+    invoiceTotalCents: r.invoice_total_cents ?? undefined,
     invoice: r.invoice_number,
     unit: r.units?.name ?? '',
     unitId: r.unit_id,
@@ -45,6 +48,7 @@ export async function getWorkspace() {
       invoiced: l.invoiced_qty,
       counted: l.counted_qty,
       priceCents: l.unit_price_cents,
+      fiscalTotalCents: l.fiscal_total_cents ?? undefined,
     })),
   }));
   return {

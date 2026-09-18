@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { formatCnpj, type Company } from '@/lib/company';
+import { XmlImport } from './xml-import';
 import { signOut } from '@/app/actions';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -61,6 +62,9 @@ const receiptSchema = z.object({
   unitId: z.string().optional(),
   companyLegalName: z.string().optional(),
   companyTaxId: z.string().optional(),
+  accessKey: z.string().optional(),
+  invoiceSeries: z.string().optional(),
+  invoiceTotalCents: z.number().int().nonnegative().optional(),
   date: z.string(),
   time: z.string(),
   status: z.enum(['counting', 'pending_approval', 'closed']),
@@ -72,7 +76,8 @@ const receiptSchema = z.object({
         uom: z.enum(['KG', 'L', 'UN']),
         invoiced: z.number().positive().finite(),
         counted: z.number().nonnegative().finite().nullable(),
-        priceCents: z.number().int().nonnegative(),
+        priceCents: z.number().finite().nonnegative(),
+        fiscalTotalCents: z.number().int().nonnegative().optional(),
       }),
     )
     .min(1),
@@ -101,6 +106,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
   const [filter, setFilter] = useState('all');
   const [selected, setSelected] = useState<string | null>(null);
   const [create, setCreate] = useState(false);
+  const [importXml, setImportXml] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [toast, setToast] = useState('');
   const [period, setPeriod] = useState('week');
@@ -385,10 +391,18 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
                           : 'Prepare sua operação para conectar pessoas, dados e canais.'}
               </p>
             </div>
-            <button className="primary" onClick={() => setCreate(true)}>
-              <Plus size={18} />
-              Novo recebimento
-            </button>
+            <div className="heading-actions">
+              <button className={live ? 'secondary' : 'primary'} onClick={() => setCreate(true)}>
+                <Plus size={18} />
+                Novo recebimento
+              </button>
+              {live && (
+                <button className="primary" onClick={() => setImportXml(true)}>
+                  <FileText size={18} />
+                  Importar XML
+                </button>
+              )}
+            </div>
           </div>
           <div className="toolbar">
             <label className="select-wrap">
@@ -698,6 +712,18 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
           operatorHref={live ? `/conferencia/${active.id}` : undefined}
         />
       )}
+      {importXml && live && (
+        <Modal title="Importar XML da NF-e" onClose={() => setImportXml(false)}>
+          <XmlImport
+            onImported={(result) => {
+              setReceipts(z.array(receiptSchema).parse(result.receipts));
+              setImportXml(false);
+              setSelected(result.createdId);
+              setToast('NF-e importada. Comece a conferência cega.');
+            }}
+          />
+        </Modal>
+      )}
       {create && (
         <NewReceipt
           units={live?.units.filter((u) => u.tax_id && u.legal_name)}
@@ -818,7 +844,7 @@ function ReceiptTable({
                 </span>
                 <small>{r.time}</small>
               </td>
-              <td className="amount">{money(receiptTotals(r).fiscal)}</td>
+              <td className="amount">{money(r.invoiceTotalCents ?? receiptTotals(r).fiscal)}</td>
               <td>
                 <Badge status={r.status} />
               </td>
@@ -1063,7 +1089,8 @@ function ReceiptDialog({
     <Modal title={counting ? 'Conferência cega' : 'Detalhes do recebimento'} onClose={onClose}>
       <div className="dialog-heading">
         <div className="eyebrow">
-          NF {receipt.invoice} · {receipt.unit}
+          NF {receipt.invoice}
+          {receipt.invoiceSeries ? ` / Série ${receipt.invoiceSeries}` : ''} · {receipt.unit}
         </div>
         <h2>{receipt.supplier}</h2>
         {receipt.companyTaxId && (
@@ -1127,11 +1154,28 @@ function ReceiptDialog({
         </form>
       ) : (
         <>
+          {receipt.accessKey && (
+            <div className="info-banner xml-source">
+              <FileText size={21} />
+              <div>
+                <strong>
+                  NF-e importada · Total da nota: {money(receipt.invoiceTotalCents ?? t.fiscal)}
+                </strong>
+                <p>Chave: {receipt.accessKey}</p>
+                <p>
+                  A conferência e o crédito por falta usam o valor dos produtos após descontos.
+                  Frete, impostos e outros valores da nota ficam separados.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="truth-grid">
             <div>
-              <span>Documento fiscal</span>
+              <span>{receipt.accessKey ? 'Mercadorias líquidas' : 'Documento fiscal'}</span>
               <strong>{money(t.fiscal)}</strong>
-              <small>Valor original da nota</small>
+              <small>
+                {receipt.accessKey ? 'Produtos após descontos' : 'Valor original da nota'}
+              </small>
             </div>
             <div>
               <span>Crédito por falta</span>
@@ -1139,9 +1183,11 @@ function ReceiptDialog({
               <small>Pendência com fornecedor</small>
             </div>
             <div>
-              <span>Valor a pagar</span>
+              <span>{receipt.accessKey ? 'Mercadorias a pagar' : 'Valor a pagar'}</span>
               <strong>{money(t.payable ?? 0)}</strong>
-              <small>Nota menos crédito</small>
+              <small>
+                {receipt.accessKey ? 'Mercadorias menos crédito' : 'Nota menos crédito'}
+              </small>
             </div>
           </div>
           <div className="table-scroll">
@@ -1400,8 +1446,8 @@ function NewReceipt({
         <div className="info-banner">
           <FileText size={21} />
           <p>
-            O XML da NF-e será conectado em uma próxima etapa. Nesta versão, os dados fiscais são
-            informados pelo gestor.
+            Para preencher os dados automaticamente, use “Importar XML” no painel. Aqui você pode
+            registrar uma nota manualmente.
           </p>
         </div>
         {error && (

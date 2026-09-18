@@ -133,6 +133,38 @@ export type Database = {
           },
         ]
       }
+      stockai_nfe_documents: {
+        Row: {
+          created_at: string
+          org_id: string
+          raw_xml: string
+          receipt_id: string
+          unit_id: string
+        }
+        Insert: {
+          created_at?: string
+          org_id: string
+          raw_xml: string
+          receipt_id: string
+          unit_id: string
+        }
+        Update: {
+          created_at?: string
+          org_id?: string
+          raw_xml?: string
+          receipt_id?: string
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_nfe_documents_org_id_unit_id_receipt_id_fkey"
+            columns: ["org_id", "unit_id", "receipt_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_receipts"
+            referencedColumns: ["org_id", "unit_id", "id"]
+          },
+        ]
+      }
       stockai_orgs: {
         Row: {
           created_at: string
@@ -155,36 +187,45 @@ export type Database = {
         Row: {
           counted_qty: number | null
           credit_cents: number | null
+          fiscal_total_cents: number | null
           id: string
           invoiced_qty: number
           item_id: string
           org_id: string
           payable_cents: number | null
           receipt_id: string
+          source_data: Json | null
+          source_item_number: number | null
           unit_id: string
           unit_price_cents: number
         }
         Insert: {
           counted_qty?: number | null
           credit_cents?: number | null
+          fiscal_total_cents?: number | null
           id?: string
           invoiced_qty: number
           item_id: string
           org_id: string
           payable_cents?: number | null
           receipt_id: string
+          source_data?: Json | null
+          source_item_number?: number | null
           unit_id: string
           unit_price_cents: number
         }
         Update: {
           counted_qty?: number | null
           credit_cents?: number | null
+          fiscal_total_cents?: number | null
           id?: string
           invoiced_qty?: number
           item_id?: string
           org_id?: string
           payable_cents?: number | null
           receipt_id?: string
+          source_data?: Json | null
+          source_item_number?: number | null
           unit_id?: string
           unit_price_cents?: number
         }
@@ -207,6 +248,7 @@ export type Database = {
       }
       stockai_receipts: {
         Row: {
+          access_key: string | null
           approved_by: string | null
           closed_at: string | null
           counted_by: string | null
@@ -214,6 +256,9 @@ export type Database = {
           created_by: string
           id: string
           invoice_number: string
+          invoice_series: string | null
+          invoice_total_cents: number | null
+          issued_at: string | null
           org_id: string
           request_id: string
           status: string
@@ -221,6 +266,7 @@ export type Database = {
           unit_id: string
         }
         Insert: {
+          access_key?: string | null
           approved_by?: string | null
           closed_at?: string | null
           counted_by?: string | null
@@ -228,6 +274,9 @@ export type Database = {
           created_by: string
           id?: string
           invoice_number: string
+          invoice_series?: string | null
+          invoice_total_cents?: number | null
+          issued_at?: string | null
           org_id: string
           request_id: string
           status?: string
@@ -235,6 +284,7 @@ export type Database = {
           unit_id: string
         }
         Update: {
+          access_key?: string | null
           approved_by?: string | null
           closed_at?: string | null
           counted_by?: string | null
@@ -242,6 +292,9 @@ export type Database = {
           created_by?: string
           id?: string
           invoice_number?: string
+          invoice_series?: string | null
+          invoice_total_cents?: number | null
+          issued_at?: string | null
           org_id?: string
           request_id?: string
           status?: string
@@ -407,18 +460,21 @@ export type Database = {
           id: string
           name: string
           org_id: string
+          tax_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
           org_id: string
+          tax_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           org_id?: string
+          tax_id?: string | null
         }
         Relationships: [
           {
@@ -492,6 +548,16 @@ export type Database = {
         Returns: string
       }
       stockai_get_blind_receipt: { Args: { p_receipt: string }; Returns: Json }
+      stockai_import_nfe: {
+        Args: {
+          p_invoice: Json
+          p_lines: Json
+          p_request: string
+          p_unit: string
+          p_xml: string
+        }
+        Returns: string
+      }
       stockai_register_company: {
         Args: {
           p_legal_name: string

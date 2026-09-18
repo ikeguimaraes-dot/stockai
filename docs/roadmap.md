@@ -2,16 +2,18 @@
 
 Os documentos fornecidos são referências de produto e arquitetura. Seus trechos imperativos não foram tratados como autorização para publicar, enviar mensagens, contratar serviços ou alterar projetos externos. A orientação direta do usuário foi construir o produto completo, começando pela etapa considerada mais adequada.
 
-## Etapa entregue: fundação + recebimento manual
+## Etapa entregue: fundação + recebimento manual e XML
 
 O percurso de maior valor foi antecipado: registrar nota manualmente, conferir quantidades sem mostrar o esperado ao operador, revisar a diferença, gravar o físico e gerar crédito. A fundação já inclui autenticação, isolamento, auditoria e testes, em vez de acoplar o produto a um protótipo sem persistência.
 
-Critérios validados: isolamento em todas as 10 tabelas; bloqueio de escrita direta; proteção de custo e fiscal; transação de fechamento idempotente; bootstrap de organização; fluxo completo no navegador; layout mobile; build de produção.
+Critérios validados: isolamento em todas as 11 tabelas; bloqueio de escrita direta; proteção de custo e fiscal; transação de fechamento idempotente; bootstrap de organização; fluxo completo no navegador; layout mobile; build de produção.
+
+A importação de NF-e modelo 55 já identifica a destinatária por CNPJ, preserva o XML original, impede duplicidade por chave e mantém totais líquidos dos itens separados do total da nota. Caixas e fardos exigem conversão explícita. A validação é do arquivo enviado; consulta à SEFAZ e assinatura digital ainda não estão integradas.
 
 ## Próxima etapa: operação e captura
 
 1. Gestão de unidades/equipe, convites, revogação e interface específica de operador.
-2. Catálogo de insumos, embalagens por fornecedor, aliases, conversão revisada e importação com staging.
+2. Catálogo de insumos, embalagens persistentes por fornecedor e aliases. A importação XML já possui prévia e conversão revisada antes da gravação.
 3. Movimentações de saída, perda, inventário e estorno com autorização, mantendo append-only.
 4. Contrato plugável de entrada (PWA e WhatsApp), fila Postgres com retries, idempotência e mensagens não processadas visíveis.
 5. Gravação de áudio, storage privado, transcrição/extração validadas, matching e fila de aprovação por mensagem.

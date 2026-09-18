@@ -40,8 +40,9 @@ Sem Supabase, `/demo` funciona com exemplos persistidos no navegador. `/operacao
 
 - Monorepo pnpm, Next.js 15, React, TypeScript estrito, validação Zod e domínio sem I/O.
 - Login, renovação de sessão, logout e cadastro obrigatório da primeira empresa e gestão de empresas em `/empresas`.
-- 10 tabelas com RLS, papéis por unidade, validade/revogação de associação e chaves estrangeiras compostas para impedir vínculos entre organizações.
+- 11 tabelas com RLS, papéis por unidade, validade/revogação de associação e chaves estrangeiras compostas para impedir vínculos entre organizações.
 - Recebimento manual com identificação da nota, fornecedor e itens, criação idempotente, detecção de nota duplicada.
+- Importação de XML de NF-e modelo 55, leiaute 4.00, com protocolo de autorização informado no arquivo. Prévia, identificação da destinatária por CNPJ, revisão de embalagens, chave única por empresa e XML original imutável.
 - Conferência de falta, excesso e item não entregue; divergência exige aprovação; recebimento conforme fecha automaticamente.
 - Fiscal imutável; físico contado; financeiro limitado ao faturado, descontando faltas. Valores em centavos, quantidades `numeric(14,4)`.
 - Fechamento transacional: movimentação, crédito e auditoria gravados juntos. Travamento do recebimento impede duas aprovações de gerarem entradas duplicadas.
@@ -52,7 +53,7 @@ Sem Supabase, `/demo` funciona com exemplos persistidos no navegador. `/operacao
 
 ## Limites desta etapa
 
-Esta é uma primeira fatia funcional do produto, **não a implementação integral da especificação**. WhatsApp, IA, NF-e/SEFAZ, evidências de qualidade/temperatura, magic links, Realtime/push, importação, receitas/CMV, PDV e compras ainda não estão implementados. O detalhamento está em [docs/roadmap.md](docs/roadmap.md).
+Esta é uma primeira fatia funcional do produto, **não a implementação integral da especificação**. WhatsApp, IA, consulta à SEFAZ, evidências de qualidade/temperatura, magic links, Realtime/push, receitas/CMV, PDV e compras ainda não estão implementados. O detalhamento está em [docs/roadmap.md](docs/roadmap.md).
 
 O painel considera até os 500 recebimentos mais recentes visíveis ao usuário. A tela de estoque exibe entradas confirmadas; ainda não é saldo operacional, pois saídas, perdas, inventário e estorno não têm fluxo implementado. A estrutura reserva o vínculo de estorno, mas não expõe uma operação de estorno incompleta. Créditos são calculados e criados no fechamento; liquidação e documento de cobrança ainda não têm interface.
 
@@ -90,3 +91,11 @@ supabase gen types --local --schema public > packages/db/types/database.ts
 ```
 
 O projeto remoto escolhido pelo usuário recebeu somente objetos exclusivos do Stockai. Para hospedagem do front, configurar `APP_ORIGIN`, autenticação e variáveis de ambiente, aplicar migrações versionadas e repetir a validação. A primeira entrega não deve receber dados de clientes antes de concluir as etapas de produção do roadmap.
+
+## Importação XML
+
+Em `/operacao`, escolha **Importar XML**, envie a NF-e e revise as unidades. A empresa precisa estar cadastrada com o mesmo CNPJ destinatário. Caixas, fardos e outras embalagens exigem fator explícito; KG/L/UN e equivalentes conhecidos usam conversão determinística. O fornecedor é associado pelo CNPJ dentro do grupo. Reimportar a mesma chave é bloqueado; repetir a mesma solicitação é idempotente.
+
+A conferência usa o valor líquido dos produtos (`vProd - vDesc`) e calcula a falta proporcionalmente, preservando o total exato mesmo com preço unitário fracionário. O total original da NF-e, incluindo seus demais componentes, fica separado. Frete e tributos não são rateados automaticamente. Custos unitários são `numeric(20,8)` em centavos; totais financeiros continuam inteiros.
+
+Aceita XML UTF-8 até 1 MB, até 990 itens, NF-e de saída normal do fornecedor em produção e protocolo `100`/`150`. Recusa eventos, cancelamentos, homologação, notas de ajuste/complemento/devolução e itens que não integram o total. A leitura valida consistência do arquivo; não verifica assinatura digital nem consulta a situação atual na SEFAZ. Conversões de embalagem são revisadas em cada importação; não há catálogo persistente de embalagens nesta etapa.

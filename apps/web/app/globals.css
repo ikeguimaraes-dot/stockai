@@ -1411,7 +1411,7 @@ tbody tr:hover {
   h1 {
     font-size: 25px;
   }
-  .page-heading > .primary {
+  .page-heading .primary {
     font-size: 10px;
     padding: 0 11px;
     margin-top: 23px;
@@ -1480,7 +1480,7 @@ tbody tr:hover {
     gap: 17px;
     margin-bottom: 21px;
   }
-  .page-heading > .primary {
+  .page-heading .primary {
     margin-top: 0;
   }
   .page-heading p {
@@ -1930,10 +1930,10 @@ body {
   transform: none;
   animation: none;
 }
-.page-heading > .primary {
+.page-heading .primary {
   position: relative;
 }
-.page-heading > .primary::after {
+.page-heading .primary::after {
   content: '';
   position: absolute;
   inset: -5px;
@@ -1943,7 +1943,7 @@ body {
   pointer-events: none;
   animation: action-pulse 6s ease-out 1s 3;
 }
-.page-heading > .primary:hover::after {
+.page-heading .primary:hover::after {
   animation: none;
 }
 .metric {
@@ -2263,4 +2263,148 @@ body {
   .company-directory .sidebar {
     display: none;
   }
+}
+
+.heading-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.xml-import {
+  display: grid;
+  gap: 18px;
+}
+.xml-upload {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px;
+  background: linear-gradient(120deg, #eff5ff, #faf0ff);
+  border: 1px dashed #8270ed;
+  border-radius: 18px;
+  color: #4234a8;
+}
+.xml-upload input {
+  max-width: 100%;
+}
+.xml-summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #3e3ab8;
+}
+.xml-summary p,
+.xml-item p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #626780;
+}
+.xml-field,
+.xml-conversion label {
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.xml-field select,
+.xml-conversion input,
+.xml-conversion select {
+  width: 100%;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #d9deec;
+  border-radius: 10px;
+  background: white;
+  color: #20243b;
+}
+.xml-totals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.xml-totals > div {
+  padding: 14px;
+  background: #f4f5ff;
+  border-radius: 12px;
+  display: grid;
+  gap: 8px;
+}
+.xml-totals span {
+  font-size: 12px;
+  color: #626780;
+}
+.xml-error {
+  padding: 14px;
+  border-radius: 12px;
+  color: #9f1743;
+  background: #fff0f5;
+}
+.xml-error a {
+  display: block;
+  margin-top: 8px;
+  text-decoration: underline;
+}
+.xml-items {
+  display: grid;
+  gap: 12px;
+}
+.xml-item {
+  padding: 16px;
+  border: 1px solid #e4e5f0;
+  border-radius: 14px;
+  display: grid;
+  gap: 14px;
+}
+.xml-unit {
+  color: #4d3fc2;
+  font-size: 13px;
+}
+.xml-conversion {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.xml-conversion > span {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: #4d3fc2;
+}
+.xml-key {
+  font-size: 12px;
+  color: #626780;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .xml-totals {
+    grid-template-columns: 1fr;
+  }
+  .heading-actions {
+    width: 100%;
+  }
+  .heading-actions button {
+    flex: 1;
+  }
+}
+
+.xml-import {
+  grid-template-columns: minmax(0, 1fr);
+}
+.xml-import > *,
+.xml-summary > div,
+.xml-conversion > *,
+.xml-totals > * {
+  min-width: 0;
+}
+.xml-upload input {
+  width: 100%;
+  min-width: 0;
+}
+.xml-summary {
+  overflow-wrap: anywhere;
+}
+.xml-summary > svg {
+  flex-shrink: 0;
+}
+.xml-source {
+  overflow-wrap: anywhere;
 }
