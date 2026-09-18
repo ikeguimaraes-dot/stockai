@@ -41,7 +41,7 @@ export function Access({ configured }: { configured: boolean }) {
         <div>
           <span className="eyebrow">BEM-VINDO AO STOCKAI</span>
           <h2>Sua operação começa aqui.</h2>
-          <p>Entre com o acesso fornecido pelo administrador.</p>
+          <p>Use o mesmo e-mail e senha já cadastrados nos sistemas do grupo.</p>
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -70,7 +70,6 @@ export function Access({ configured }: { configured: boolean }) {
                 placeholder="Sua senha"
                 autoComplete="current-password"
                 required
-                minLength={8}
               />
             </label>
             {!configured && (

@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 export async function signIn(form: FormData): Promise<{ error: string }> {
   const input = z
-    .object({ email: z.string().email(), password: z.string().min(8).max(200) })
+    .object({ email: z.string().trim().email(), password: z.string().min(1) })
     .safeParse(Object.fromEntries(form));
-  if (!input.success) return { error: 'Informe um e-mail e uma senha de pelo menos 8 caracteres.' };
+  if (!input.success) return { error: 'Informe seu e-mail e sua senha já cadastrados.' };
   try {
     const client = await serverClient();
     const { error } = await client.auth.signInWithPassword(input.data);
