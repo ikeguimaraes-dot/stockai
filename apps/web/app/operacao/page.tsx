@@ -17,6 +17,7 @@ export default async function Operation() {
     <Stockai
       live={{
         initialReceipts: workspace.receipts,
+        stockBalances: workspace.stockBalances,
         units: workspace.units,
         orgName: workspace.orgs.map((o) => o.name).join(' · '),
         email: workspace.email,

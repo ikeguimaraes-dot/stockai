@@ -178,6 +178,209 @@ export type Database = {
           },
         ]
       }
+      stockai_order_lines: {
+        Row: {
+          dispatched_qty: number | null
+          id: string
+          item_id: string
+          item_name: string
+          order_id: string
+          org_id: string
+          requested_qty: number
+          uom: string
+        }
+        Insert: {
+          dispatched_qty?: number | null
+          id?: string
+          item_id: string
+          item_name: string
+          order_id: string
+          org_id: string
+          requested_qty: number
+          uom: string
+        }
+        Update: {
+          dispatched_qty?: number | null
+          id?: string
+          item_id?: string
+          item_name?: string
+          order_id?: string
+          org_id?: string
+          requested_qty?: number
+          uom?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_order_lines_org_id_item_id_fkey"
+            columns: ["org_id", "item_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_items"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "stockai_order_lines_org_id_order_id_fkey"
+            columns: ["org_id", "order_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_orders"
+            referencedColumns: ["org_id", "id"]
+          },
+        ]
+      }
+      stockai_order_movements: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          item_id: string
+          order_line_id: string
+          org_id: string
+          qty_base: number
+          unit_cost_cents: number
+          unit_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          item_id: string
+          order_line_id: string
+          org_id: string
+          qty_base: number
+          unit_cost_cents: number
+          unit_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          item_id?: string
+          order_line_id?: string
+          org_id?: string
+          qty_base?: number
+          unit_cost_cents?: number
+          unit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_order_movements_org_id_item_id_fkey"
+            columns: ["org_id", "item_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_items"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "stockai_order_movements_org_id_order_line_id_fkey"
+            columns: ["org_id", "order_line_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_order_lines"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "stockai_order_movements_org_id_unit_id_fkey"
+            columns: ["org_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_units"
+            referencedColumns: ["org_id", "id"]
+          },
+        ]
+      }
+      stockai_orders: {
+        Row: {
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          created_by: string
+          delivery_notes: string | null
+          destination_id: string
+          destination_name: string
+          dispatched_at: string | null
+          dispatched_by: string | null
+          id: string
+          kitchen: string
+          needed_on: string
+          notes: string
+          org_id: string
+          received_at: string | null
+          received_by: string | null
+          receiver_name: string | null
+          request_id: string
+          signature: Json | null
+          source_id: string
+          source_name: string
+          status: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by: string
+          delivery_notes?: string | null
+          destination_id: string
+          destination_name: string
+          dispatched_at?: string | null
+          dispatched_by?: string | null
+          id?: string
+          kitchen: string
+          needed_on: string
+          notes?: string
+          org_id: string
+          received_at?: string | null
+          received_by?: string | null
+          receiver_name?: string | null
+          request_id: string
+          signature?: Json | null
+          source_id: string
+          source_name: string
+          status?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          created_by?: string
+          delivery_notes?: string | null
+          destination_id?: string
+          destination_name?: string
+          dispatched_at?: string | null
+          dispatched_by?: string | null
+          id?: string
+          kitchen?: string
+          needed_on?: string
+          notes?: string
+          org_id?: string
+          received_at?: string | null
+          received_by?: string | null
+          receiver_name?: string | null
+          request_id?: string
+          signature?: Json | null
+          source_id?: string
+          source_name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_orders_org_id_destination_id_fkey"
+            columns: ["org_id", "destination_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_units"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "stockai_orders_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stockai_orders_org_id_source_id_fkey"
+            columns: ["org_id", "source_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_units"
+            referencedColumns: ["org_id", "id"]
+          },
+        ]
+      }
       stockai_orgs: {
         Row: {
           created_at: string
@@ -579,6 +782,19 @@ export type Database = {
         Args: { p_org_name: string; p_unit_name: string }
         Returns: string
       }
+      stockai_cancel_order: { Args: { p_order: string }; Returns: undefined }
+      stockai_create_order: {
+        Args: {
+          p_destination: string
+          p_kitchen: string
+          p_lines: Json
+          p_needed: string
+          p_notes: string
+          p_request: string
+          p_source: string
+        }
+        Returns: string
+      }
       stockai_create_receipt: {
         Args: {
           p_invoice: string
@@ -588,6 +804,10 @@ export type Database = {
           p_unit: string
         }
         Returns: string
+      }
+      stockai_dispatch_order: {
+        Args: { p_lines: Json; p_order: string }
+        Returns: undefined
       }
       stockai_get_blind_receipt: { Args: { p_receipt: string }; Returns: Json }
       stockai_import_nfe: {
@@ -599,6 +819,16 @@ export type Database = {
           p_xml: string
         }
         Returns: string
+      }
+      stockai_order_units: { Args: never; Returns: Json }
+      stockai_receive_order: {
+        Args: {
+          p_name: string
+          p_notes: string
+          p_order: string
+          p_signature: Json
+        }
+        Returns: undefined
       }
       stockai_register_company: {
         Args: {
@@ -624,6 +854,17 @@ export type Database = {
           p_uom: string
         }
         Returns: string
+      }
+      stockai_stock_balances: {
+        Args: never
+        Returns: {
+          item_id: string
+          name: string
+          quantity: number
+          unit_id: string
+          uom: string
+          value_cents: number
+        }[]
       }
       stockai_submit_receipt_count: {
         Args: { p_counts: Json; p_receipt: string }

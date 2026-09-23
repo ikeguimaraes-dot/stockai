@@ -1,4 +1,5 @@
 'use client';
+import { OrderNav } from './order-nav';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Boxes, Building2, LayoutDashboard, Plus, Search, Pencil, ArrowLeft } from 'lucide-react';
@@ -65,6 +66,7 @@ export function CompanyDirectory({
             <Building2 size={19} />
             Empresas
           </Link>
+          <OrderNav />
         </nav>
         <div className="sidebar-bottom">
           <div className="side-note">

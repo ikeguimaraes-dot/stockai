@@ -1,4 +1,5 @@
 'use client';
+import { OrderNav } from './order-nav';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -93,6 +94,7 @@ export function ProductDirectory({
             <Building2 size={19} />
             Empresas
           </Link>
+          <OrderNav />
         </nav>
       </aside>
       <div className="main-shell">

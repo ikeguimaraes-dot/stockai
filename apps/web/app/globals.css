@@ -2680,3 +2680,363 @@ select:focus {
   background: #b68aee55;
   color: #fff;
 }
+
+/* Kitchen requisitions and signed delivery receipts. */
+.order-mobile-nav {
+  display: none;
+}
+.order-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 24px 0;
+}
+.order-stat {
+  text-align: left;
+  padding: 22px;
+  display: grid;
+  gap: 12px;
+}
+.order-stat span {
+  color: var(--muted);
+}
+.order-stat strong {
+  font-size: 30px;
+}
+.order-stat.selected {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.order-filters {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+.order-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.order-card {
+  text-align: left;
+  padding: 24px;
+  transition:
+    border-color 180ms,
+    transform 180ms;
+}
+.order-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.order-card-top,
+.order-card-foot,
+.order-detail-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.order-card-top {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 20px;
+}
+.order-card h2 {
+  font-size: 20px;
+  margin-bottom: 9px;
+}
+.order-card p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.order-route {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0;
+}
+.order-card-foot {
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.order-card-foot strong {
+  color: var(--accent);
+}
+.order-status {
+  display: inline-flex;
+  border-radius: 20px;
+  padding: 7px 12px;
+  font-size: 11px;
+  background: var(--surface);
+  color: var(--accent);
+}
+.order-status.dispatched {
+  color: var(--gold);
+  background: #ffc32918;
+}
+.order-status.delivered {
+  color: #acdfc6;
+  background: #70bb9418;
+}
+.order-status.cancelled {
+  color: var(--muted);
+}
+.order-wide,
+.order-lines {
+  grid-column: 1/-1;
+}
+.order-lines {
+  display: grid;
+  gap: 16px;
+}
+.order-line-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px 38px;
+  align-items: end;
+  gap: 14px;
+}
+.order-line-input .icon-button {
+  margin-bottom: 4px;
+}
+.order-create textarea,
+.order-receive input:not([type='checkbox']),
+.order-receive textarea,
+.dispatch-quantity {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  width: 100%;
+  font: inherit;
+}
+.order-create textarea,
+.order-receive textarea {
+  resize: vertical;
+}
+.order-detail {
+  padding: 28px;
+}
+.order-proof-heading {
+  padding: 26px 0;
+}
+.order-proof-heading h2 {
+  font-size: 26px;
+  margin: 12px 0;
+}
+.order-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin: 0 0 24px;
+}
+.order-meta dt {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+.order-meta dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.order-notes {
+  white-space: pre-wrap;
+  padding: 16px;
+  background: var(--surface);
+  border-radius: 10px;
+  margin-bottom: 24px;
+  line-height: 1.7;
+}
+.dispatch-quantity {
+  max-width: 135px;
+  min-width: 90px;
+}
+.order-dispatch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  margin: 22px 0;
+}
+.order-dispatch p {
+  max-width: 550px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.order-dispatch button {
+  flex-shrink: 0;
+}
+.order-cancel {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.order-receive,
+.order-signed {
+  display: grid;
+  gap: 18px;
+  max-width: 720px;
+  margin: 28px auto 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.order-receive p,
+.order-signed p {
+  line-height: 1.7;
+}
+.order-receive label {
+  display: grid;
+  gap: 9px;
+}
+.signature-pad {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 1;
+  display: block;
+  background: #fff;
+  border: 1px solid #d6cede;
+  border-radius: 10px;
+  touch-action: none;
+  user-select: none;
+}
+.signature-help {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.order-receive .order-consent {
+  display: flex;
+  align-items: flex-start;
+  line-height: 1.6;
+}
+.order-consent input {
+  margin-top: 4px;
+}
+.order-timeline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  margin-top: 28px;
+  padding-top: 20px;
+  font-size: 11px;
+  color: var(--muted);
+}
+@media (max-width: 700px) {
+  .order-mobile-nav {
+    display: flex;
+    gap: 12px;
+    margin: 0 0 20px;
+  }
+  .order-mobile-nav .nav-item {
+    flex: 1;
+    background: var(--panel);
+    border: 1px solid var(--line);
+  }
+  .order-mobile-nav .active {
+    border-color: var(--accent);
+  }
+  .order-list,
+  .order-filters {
+    grid-template-columns: 1fr;
+  }
+  .order-overview {
+    gap: 8px;
+  }
+  .order-stat {
+    padding: 14px;
+  }
+  .order-stat strong {
+    font-size: 24px;
+  }
+  .order-stat span {
+    font-size: 11px;
+  }
+  .order-detail {
+    padding: 16px;
+  }
+  .order-line-input {
+    grid-template-columns: minmax(0, 1fr) 86px 28px;
+    gap: 8px;
+  }
+  .order-dispatch {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .order-receive,
+  .order-signed {
+    padding: 16px;
+  }
+  .order-detail-top {
+    flex-wrap: wrap;
+  }
+  .order-proof-heading h2 {
+    font-size: 22px;
+  }
+}
+@media print {
+  body:has(.order-detail) {
+    background: white;
+    color: #241831;
+  }
+  .orders-directory .sidebar,
+  .orders-directory .topbar,
+  .orders-directory .page-heading,
+  .orders-directory .order-mobile-nav,
+  .orders-directory .catalog-success,
+  .orders-directory .error,
+  .order-detail button,
+  .order-receive,
+  .order-cancel {
+    display: none !important;
+  }
+  .orders-directory .main-shell {
+    margin: 0;
+    width: 100%;
+  }
+  .orders-directory main {
+    padding: 0;
+  }
+  .order-detail {
+    border: 0;
+    box-shadow: none;
+    background: white;
+    padding: 0;
+  }
+  .order-detail * {
+    color: #241831 !important;
+  }
+  .order-detail table {
+    min-width: 0;
+  }
+  .order-detail th,
+  .order-detail td,
+  .order-notes,
+  .order-signed,
+  .order-status {
+    background: white;
+  }
+  .order-signed {
+    break-inside: avoid;
+  }
+  .order-detail .table-scroll {
+    overflow: visible;
+  }
+  .order-dispatch,
+  .order-detail-top {
+    display: none;
+  }
+}
+
+.order-mobile-nav .nav-item::before {
+  display: none;
+}

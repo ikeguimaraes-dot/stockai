@@ -1,4 +1,5 @@
 import 'server-only';
+import { getStockBalances } from './stock-server';
 import { serverClient } from './supabase-server';
 import type { Receipt } from '@stockai/core';
 export async function getWorkspace() {
@@ -8,7 +9,7 @@ export async function getWorkspace() {
     error: authError,
   } = await client.auth.getUser();
   if (authError || !user) throw new Error('UNAUTHENTICATED');
-  const [result, unitResult, orgResult, membershipResult] = await Promise.all([
+  const [result, unitResult, orgResult, membershipResult, balanceResult] = await Promise.all([
     client
       .from('stockai_receipts')
       .select(
@@ -19,6 +20,7 @@ export async function getWorkspace() {
     client.from('stockai_units').select('id,name,org_id,legal_name,tax_id'),
     client.from('stockai_orgs').select('id,name'),
     client.from('stockai_memberships').select('org_id,unit_id,role'),
+    getStockBalances(),
   ]);
   if (result.error || unitResult.error || orgResult.error || membershipResult.error)
     throw new Error('Não foi possível carregar a operação.');
@@ -53,6 +55,7 @@ export async function getWorkspace() {
   }));
   return {
     receipts,
+    stockBalances: balanceResult,
     units: unitResult.data ?? [],
     orgs: orgResult.data ?? [],
     memberships: membershipResult.data ?? [],

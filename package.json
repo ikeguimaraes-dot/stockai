@@ -8,7 +8,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm --filter @stockai/core test",
     "lint": "pnpm --filter @stockai/web lint",
-    "test:db": "docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/foundation.sql && docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/companies.sql && docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/nfe.sql && docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/products.sql",
+    "test:db": "docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/foundation.sql && docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/companies.sql && docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/nfe.sql && docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/products.sql && docker exec -i supabase_db_stockai psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/orders.sql",
     "test:e2e": "playwright test",
     "format": "prettier --write apps packages/core scripts tests *.ts *.json .github/**/*.yml docs README.md"
   },

@@ -1,4 +1,7 @@
 'use client';
+import { useRouter } from 'next/navigation';
+import type { StockBalance } from '@/lib/orders';
+import { OrderNav } from './order-nav';
 import Link from 'next/link';
 import { formatCnpj, type Company } from '@/lib/company';
 import { XmlImport } from './xml-import';
@@ -93,11 +96,13 @@ function Badge({ status }: { status: Receipt['status'] }) {
 
 type LiveWorkspace = {
   initialReceipts: Receipt[];
+  stockBalances: StockBalance[];
   units: Company[];
   orgName: string;
   email: string;
 };
 export function Stockai({ live }: { live?: LiveWorkspace }) {
+  const router = useRouter();
   const [page, setPage] = useState<Page>('overview');
   const [receipts, setReceipts] = useState<Receipt[]>(live?.initialReceipts ?? demoReceipts);
   const [ready, setReady] = useState(false);
@@ -166,6 +171,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
     if (!response.ok) throw new Error(data.error ?? 'Não foi possível salvar.');
     const updated = z.array(receiptSchema).parse(data.receipts);
     setReceipts(updated);
+    router.refresh();
     return data as { receipts: Receipt[]; createdId: string | null };
   };
   const save = async (receipt: Receipt) => {
@@ -301,6 +307,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
               {id === 'inbox' && pending.length > 0 && <b>{pending.length}</b>}
             </button>
           ))}
+          {live && <OrderNav />}
           {live && (
             <Link href="/produtos" className="nav-item">
               <Boxes size={19} />
@@ -583,7 +590,16 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
               </div>
             </section>
           )}
-          {page === 'stock' && <StockTable receipts={scoped} />}
+          {page === 'stock' && (
+            <StockTable
+              receipts={scoped}
+              balances={live?.stockBalances.filter(
+                (b) =>
+                  unit === 'Todas as empresas' ||
+                  live.units.find((u) => u.id === b.unit_id)?.name === unit,
+              )}
+            />
+          )}
           {page === 'suppliers' && (
             <div className="supplier-grid">
               {Array.from(new Set(scoped.map((r) => r.supplier))).map((name) => {
@@ -959,9 +975,18 @@ function ReceiptChart({
     </div>
   );
 }
-function StockTable({ receipts }: { receipts: Receipt[] }) {
+function StockTable({ receipts, balances }: { receipts: Receipt[]; balances?: StockBalance[] }) {
   const items = useMemo(() => {
     const map = new Map<string, { name: string; uom: string; quantity: number; value: number }>();
+    if (balances) {
+      for (const b of balances) {
+        const row = map.get(b.item_id) ?? { name: b.name, uom: b.uom, quantity: 0, value: 0 };
+        row.quantity += b.quantity;
+        row.value += b.value_cents;
+        map.set(b.item_id, row);
+      }
+      return [...map.entries()].map(([id, row]) => ({ ...row, id }));
+    }
     for (const r of receipts.filter((r) => r.status === 'closed'))
       for (const line of r.lines) {
         const key = `${line.name}:${line.uom}`;
@@ -970,16 +995,17 @@ function StockTable({ receipts }: { receipts: Receipt[] }) {
         row.value += Math.round((line.counted ?? 0) * line.priceCents);
         map.set(key, row);
       }
-    return [...map.values()];
-  }, [receipts]);
+    return [...map.entries()].map(([id, row]) => ({ ...row, id }));
+  }, [receipts, balances]);
   return (
     <section className="panel">
       <div className="panel-heading">
         <div>
-          <h2>Entradas confirmadas</h2>
+          <h2>{balances ? 'Saldo em estoque' : 'Entradas confirmadas'}</h2>
           <p>
-            Quantidades dos recebimentos concluídos. Saídas e inventário serão incorporados na etapa
-            de movimentações.
+            {balances
+              ? 'Entradas confirmadas, saídas expedidas e entregas assinadas. Produtos em trânsito entram no destino após a assinatura.'
+              : 'Quantidades dos recebimentos concluídos neste ambiente de demonstração.'}
           </p>
         </div>
         <span className="count-pill">{items.length} insumos</span>
@@ -989,14 +1015,14 @@ function StockTable({ receipts }: { receipts: Receipt[] }) {
           <thead>
             <tr>
               <th>INSUMO</th>
-              <th>QUANTIDADE RECEBIDA</th>
+              <th>{balances ? 'SALDO DISPONÍVEL' : 'QUANTIDADE RECEBIDA'}</th>
               <th>UNIDADE DE MEDIDA</th>
               <th>VALOR FÍSICO</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.name + item.uom}>
+              <tr key={item.id}>
                 <td>
                   <strong>{item.name}</strong>
                 </td>
