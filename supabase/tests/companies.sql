@@ -31,6 +31,17 @@ do $$ begin
  begin perform public.stockai_create_receipt(current_setting('test.legacy')::uuid,'Supplier','001','[{"name":"Item","uom":"UN","quantity":1,"price_cents":100}]',gen_random_uuid()); raise exception 'Unregistered company received invoice'; exception when check_violation then null; end;
 end $$;
 reset role;
+set local role authenticated;
+select set_config('request.jwt.claim.sub','11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
+select set_config('test.second_group_company',public.stockai_register_company('Empresa C','Empresa C Ltda','98765432000199',null,null,true)::text,true);
+select set_config('test.second_group_org',(select org_id::text from public.stockai_units where id=current_setting('test.second_group_company')::uuid),true);
+do $$ begin
+ if current_setting('test.second_group_org')=current_setting('test.org') then raise exception 'New group reused the existing org'; end if;
+ if (select count(distinct org_id) from public.stockai_memberships where user_id='11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa'::uuid and role='owner' and revoked_at is null)<>2 then raise exception 'Owner should hold two independent groups'; end if;
+ if not exists(select 1 from public.stockai_units where org_id=current_setting('test.org')::uuid) or not exists(select 1 from public.stockai_units where org_id=current_setting('test.second_group_org')::uuid) then raise exception 'Same login cannot see companies across both groups'; end if;
+ begin perform public.stockai_register_company('Empresa D','Empresa D Ltda','12345678000195'); raise exception 'Implicit org creation allowed while memberships already exist'; exception when insufficient_privilege then null; end;
+end $$;
+reset role;
 insert into public.stockai_memberships(org_id,unit_id,user_id,role) values(current_setting('test.org')::uuid,current_setting('test.company')::uuid,'33333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa','operator');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','33333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);

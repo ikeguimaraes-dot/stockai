@@ -87,3 +87,57 @@ test('database: first company is required and invoices retain the selected desti
   await page.getByRole('button', { name: 'Abrir recebimento de Fornecedor teste' }).click();
   await expect(page.getByRole('dialog').getByText(/11.222.333\/0001-81/)).toBeVisible();
 });
+
+test('database: a single login can register a second, independent group of companies', async ({
+  page,
+}) => {
+  test.skip(!process.env.STOCKAI_TEST_DATABASE, 'Local database only');
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !['localhost', '127.0.0.1'].includes(new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname)
+  )
+    throw new Error('Set the local database URL explicitly for this test');
+  const status = JSON.parse(
+    execFileSync('supabase', ['status', '--output', 'json'], { encoding: 'utf8' }),
+  );
+  const url = status.API_URL;
+  if (!['localhost', '127.0.0.1'].includes(new URL(url).hostname))
+    throw new Error('Local database only');
+  const email = `multigroup-${Date.now()}@stockai.local`;
+  const password = 'Multigroup.local.2026';
+  const key = status.SERVICE_ROLE_KEY;
+  const response = await fetch(`${url}/auth/v1/admin/users`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password, email_confirm: true }),
+  });
+  expect(response.ok).toBeTruthy();
+  await page.goto('/login');
+  await page.getByLabel('E-mail', { exact: true }).fill(email);
+  await page.getByLabel('Senha', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Entrar na operação' }).click();
+  await expect(page).toHaveURL(/\/empresas$/);
+  await page.getByLabel('Nome fantasia').fill('Empresa Raiz');
+  await page.getByLabel('Razão social').fill('Empresa Raiz Ltda');
+  await page.getByLabel('CNPJ', { exact: true }).fill('11.444.777/0001-61');
+  await page.getByRole('button', { name: 'Salvar empresa e continuar' }).click();
+  await expect(page.getByRole('heading', { name: 'Tudo sob controle.' })).toBeVisible();
+  await page.getByRole('link', { name: 'Empresas', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Empresas cadastradas' })).toBeVisible();
+  await expect(page.getByRole('article')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Nova empresa', exact: true }).click();
+  await page.getByLabel('Grupo').selectOption({ label: '+ Novo grupo (empresa independente)' });
+  await page.getByLabel('Nome fantasia').fill('Empresa Filial Externa');
+  await page.getByLabel('Razão social').fill('Empresa Filial Externa Ltda');
+  await page.getByLabel('CNPJ', { exact: true }).fill('12.345.678/0001-95');
+  await page.getByRole('button', { name: 'Salvar empresa', exact: true }).click();
+  await expect(page.getByRole('article')).toHaveCount(2);
+  await expect(page.getByRole('heading', { name: 'Empresa Raiz', exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Empresa Filial Externa', exact: true }),
+  ).toBeVisible();
+  const rootCard = page.getByRole('article').filter({ hasText: 'Empresa Raiz' });
+  const otherCard = page.getByRole('article').filter({ hasText: 'Empresa Filial Externa' });
+  await expect(rootCard.getByText('Grupo', { exact: true })).toBeVisible();
+  await expect(otherCard.getByText('Grupo', { exact: true })).toBeVisible();
+});

@@ -20,13 +20,13 @@ export default async function Companies() {
   const orgs = workspace.orgs.filter((o) =>
     managers.some((m) => m.org_id === o.id && !m.unit_id && m.role !== 'unit_manager'),
   );
-  if (!workspace.units.some((u) => u.tax_id))
-    return <Setup companies={companies} orgs={orgs} hasAccess={workspace.memberships.length > 0} />;
+  if (!workspace.units.some((u) => u.tax_id)) return <Setup companies={companies} orgs={orgs} />;
   return (
     <CompanyDirectory
       companies={workspace.units}
       editableIds={companies.map((c) => c.id)}
       orgs={orgs}
+      groups={workspace.orgs}
       email={workspace.email}
     />
   );

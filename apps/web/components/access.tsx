@@ -107,14 +107,12 @@ export function Access({ configured }: { configured: boolean }) {
 export function Setup({
   companies = [],
   orgs = [],
-  hasAccess = false,
   initialCompanyId,
   onSaved,
   onCancel,
 }: {
   companies?: import('@/lib/company').Company[];
   orgs?: { id: string; name: string }[];
-  hasAccess?: boolean;
   initialCompanyId?: string;
   onSaved?: () => void;
   onCancel?: () => void;
@@ -124,7 +122,6 @@ export function Setup({
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState(initialCompanyId ?? companies[0]?.id ?? '');
   const company = companies.find((c) => c.id === selected);
-  const canCreate = orgs.length > 0 || !hasAccess;
   return (
     <div className="setup-page">
       <div className="panel access-form">
@@ -136,107 +133,104 @@ export function Setup({
           <p>
             Informe a empresa destinatária das notas. Cada recebimento ficará vinculado ao seu CNPJ.
           </p>
-          {!companies.length && !canCreate ? (
-            <p role="status">Peça ao gestor para cadastrar a empresa e liberar sua operação.</p>
-          ) : (
-            <form
-              key={selected}
-              onChange={() => setError('')}
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setBusy(true);
-                setError('');
-                try {
-                  const result = await setup(new FormData(e.currentTarget));
-                  if (result.error) {
-                    setError(result.error);
-                    return;
-                  }
-                  if (onSaved) onSaved();
-                  else router.replace('/operacao');
-                  router.refresh();
-                } catch {
-                  setError('Não foi possível salvar. Tente novamente.');
-                } finally {
-                  setBusy(false);
+          <form
+            key={selected}
+            onChange={() => setError('')}
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              setError('');
+              try {
+                const result = await setup(new FormData(e.currentTarget));
+                if (result.error) {
+                  setError(result.error);
+                  return;
                 }
-              }}
-            >
-              {initialCompanyId === undefined && companies.length > 0 && (
-                <label>
-                  Empresa a cadastrar ou atualizar
-                  <select value={selected} onChange={(e) => setSelected(e.target.value)}>
-                    {companies.map((c) => (
-                      <option value={c.id} key={c.id}>
-                        {c.name}
-                        {!c.tax_id ? ' · cadastro pendente' : ''}
-                      </option>
-                    ))}
-                    {canCreate && <option value="">Cadastrar outra empresa</option>}
-                  </select>
-                </label>
-              )}
-              <input type="hidden" name="unitId" value={selected} />
-              {company ? (
-                <input type="hidden" name="orgId" value={company.org_id} />
-              ) : orgs.length > 0 ? (
-                <label>
-                  Grupo
-                  <select name="orgId">
-                    {orgs.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : (
-                <input type="hidden" name="orgId" value="" />
-              )}
+                if (onSaved) onSaved();
+                else router.replace('/operacao');
+                router.refresh();
+              } catch {
+                setError('Não foi possível salvar. Tente novamente.');
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            {initialCompanyId === undefined && companies.length > 0 && (
               <label>
-                Nome fantasia
-                <input
-                  name="name"
-                  required
-                  minLength={2}
-                  defaultValue={company?.name}
-                  placeholder="Ex.: Restaurante Jardins"
-                  maxLength={80}
-                />
+                Empresa a cadastrar ou atualizar
+                <select value={selected} onChange={(e) => setSelected(e.target.value)}>
+                  {companies.map((c) => (
+                    <option value={c.id} key={c.id}>
+                      {c.name}
+                      {!c.tax_id ? ' · cadastro pendente' : ''}
+                    </option>
+                  ))}
+                  <option value="">Cadastrar outra empresa</option>
+                </select>
               </label>
+            )}
+            <input type="hidden" name="unitId" value={selected} />
+            {company ? (
+              <input type="hidden" name="orgId" value={company.org_id} />
+            ) : orgs.length > 0 ? (
               <label>
-                Razão social
-                <input
-                  name="legalName"
-                  required
-                  minLength={2}
-                  defaultValue={company?.legal_name ?? ''}
-                  placeholder="Nome empresarial da nota fiscal"
-                  maxLength={160}
-                />
+                Grupo
+                <select name="orgId">
+                  {orgs.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                    </option>
+                  ))}
+                  <option value="new">+ Novo grupo (empresa independente)</option>
+                </select>
               </label>
-              <label>
-                CNPJ
-                <input
-                  name="taxId"
-                  required
-                  defaultValue={company?.tax_id ?? ''}
-                  placeholder="00.000.000/0001-00"
-                  maxLength={18}
-                  autoCapitalize="characters"
-                />
-              </label>
-              {error && (
-                <p role="alert" className="error">
-                  {error}
-                </p>
-              )}
-              <button className="primary full" disabled={busy}>
-                {busy ? 'Salvando...' : onCancel ? 'Salvar empresa' : 'Salvar empresa e continuar'}
-                <ArrowRight size={17} />
-              </button>
-            </form>
-          )}
+            ) : (
+              <input type="hidden" name="orgId" value="new" />
+            )}
+            <label>
+              Nome fantasia
+              <input
+                name="name"
+                required
+                minLength={2}
+                defaultValue={company?.name}
+                placeholder="Ex.: Restaurante Jardins"
+                maxLength={80}
+              />
+            </label>
+            <label>
+              Razão social
+              <input
+                name="legalName"
+                required
+                minLength={2}
+                defaultValue={company?.legal_name ?? ''}
+                placeholder="Nome empresarial da nota fiscal"
+                maxLength={160}
+              />
+            </label>
+            <label>
+              CNPJ
+              <input
+                name="taxId"
+                required
+                defaultValue={company?.tax_id ?? ''}
+                placeholder="00.000.000/0001-00"
+                maxLength={18}
+                autoCapitalize="characters"
+              />
+            </label>
+            {error && (
+              <p role="alert" className="error">
+                {error}
+              </p>
+            )}
+            <button className="primary full" disabled={busy}>
+              {busy ? 'Salvando...' : onCancel ? 'Salvar empresa' : 'Salvar empresa e continuar'}
+              <ArrowRight size={17} />
+            </button>
+          </form>
           {onCancel && (
             <button className="demo-link full" type="button" onClick={onCancel} disabled={busy}>
               Voltar às empresas

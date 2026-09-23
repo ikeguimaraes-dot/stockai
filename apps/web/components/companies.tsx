@@ -11,11 +11,13 @@ export function CompanyDirectory({
   companies,
   editableIds,
   orgs,
+  groups,
   email,
 }: {
   companies: Company[];
   editableIds: string[];
   orgs: { id: string; name: string }[];
+  groups: { id: string; name: string }[];
   email: string;
 }) {
   const [editing, setEditing] = useState<string | null>(null);
@@ -27,12 +29,12 @@ export function CompanyDirectory({
       .toLocaleLowerCase('pt-BR')
       .includes(normalized),
   );
+  const groupName = (orgId: string) => groups.find((g) => g.id === orgId)?.name;
   if (editing !== null)
     return (
       <Setup
         companies={companies.filter((c) => editableIds.includes(c.id))}
         orgs={orgs}
-        hasAccess
         initialCompanyId={editing}
         onSaved={() => {
           setEditing(null);
@@ -101,18 +103,16 @@ export function CompanyDirectory({
               <h1>Empresas cadastradas</h1>
               <p>Consulte os dados das empresas que recebem suas notas fiscais.</p>
             </div>
-            {orgs.length > 0 && (
-              <button
-                className="primary"
-                onClick={() => {
-                  setSaved(false);
-                  setEditing('');
-                }}
-              >
-                <Plus size={18} />
-                Nova empresa
-              </button>
-            )}
+            <button
+              className="primary"
+              onClick={() => {
+                setSaved(false);
+                setEditing('');
+              }}
+            >
+              <Plus size={18} />
+              Nova empresa
+            </button>
           </div>
           {saved && (
             <p role="status" className="company-success">
@@ -147,6 +147,12 @@ export function CompanyDirectory({
                 </div>
                 <h2>{company.name}</h2>
                 <dl>
+                  {groups.length > 1 && (
+                    <div>
+                      <dt>Grupo</dt>
+                      <dd>{groupName(company.org_id) ?? 'Grupo desconhecido'}</dd>
+                    </div>
+                  )}
                   <div>
                     <dt>Razão social</dt>
                     <dd>{company.legal_name ?? 'Ainda não informada'}</dd>

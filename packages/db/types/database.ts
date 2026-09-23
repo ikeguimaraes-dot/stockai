@@ -834,6 +834,7 @@ export type Database = {
         Args: {
           p_legal_name: string
           p_name: string
+          p_new_org?: boolean
           p_org?: string
           p_tax_id: string
           p_unit?: string
