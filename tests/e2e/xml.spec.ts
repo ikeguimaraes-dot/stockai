@@ -102,14 +102,22 @@ test('database: XML preview, conversion, count, duplicate and wrong destination'
   }
   const first = invoice(124),
     second = invoice(125).replace('<uCom>CX</uCom>', '<uCom>UN</uCom>');
-  await dialog.getByLabel('Arquivo XML da NF-e').setInputFiles([
-    { name: 'ja-importada.xml', mimeType: 'application/xml', buffer: Buffer.from(original) },
-    { name: 'nota-124.xml', mimeType: 'application/xml', buffer: Buffer.from(first) },
-    { name: 'copia-124.xml', mimeType: 'application/xml', buffer: Buffer.from(first) },
-    { name: 'nota-125.xml', mimeType: 'application/xml', buffer: Buffer.from(second) },
-    { name: 'invalido.xml', mimeType: 'application/xml', buffer: Buffer.from('<invalid>') },
-    { name: 'outra-empresa.xml', mimeType: 'application/xml', buffer: Buffer.from(wrong) },
-  ]);
+  await dialog
+    .getByLabel('Arquivo XML da NF-e')
+    .setInputFiles([
+      { name: 'ja-importada.xml', mimeType: 'application/xml', buffer: Buffer.from(original) },
+      { name: 'nota-124.xml', mimeType: 'application/xml', buffer: Buffer.from(first) },
+      { name: 'copia-124.xml', mimeType: 'application/xml', buffer: Buffer.from(first) },
+      { name: 'nota-125.xml', mimeType: 'application/xml', buffer: Buffer.from(second) },
+      { name: 'invalido.xml', mimeType: 'application/xml', buffer: Buffer.from('<invalid>') },
+      { name: 'outra-empresa.xml', mimeType: 'application/xml', buffer: Buffer.from(wrong) },
+      ...Array.from({ length: 21 }, (_, i) => ({
+        name: `repetida-${i}.xml`,
+        mimeType: 'application/xml',
+        buffer: Buffer.from(original),
+      })),
+    ]);
+  await expect(dialog.getByText('27 arquivos', { exact: true })).toBeVisible();
   await expect(dialog.getByRole('button', { name: /nota-125.xml/ })).toBeEnabled();
   await expect(dialog.getByRole('button', { name: /ja-importada.xml/ })).toContainText('Duplicada');
   await expect(dialog.getByRole('button', { name: /copia-124.xml/ })).toContainText('Duplicada');

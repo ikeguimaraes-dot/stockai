@@ -86,10 +86,6 @@ export function XmlImport({
   async function read(files: File[]) {
     if (!files.length) return;
     setError('');
-    if (files.length > 20) {
-      setError('Selecione até 20 arquivos por lote, com até 1 MB cada.');
-      return;
-    }
     const batch: Entry[] = files.map((file) => ({
       id: crypto.randomUUID(),
       name: file.name,
@@ -205,7 +201,7 @@ export function XmlImport({
       <label className="xml-upload">
         <FileUp size={28} />
         <strong>Arquivos XML da NF-e</strong>
-        <span>Até 20 arquivos por lote · 1 MB por arquivo · UTF-8</span>
+        <span>Selecione todos os XMLs · Envio um por vez · 1 MB por arquivo · UTF-8</span>
         <input
           aria-label="Arquivo XML da NF-e"
           type="file"
