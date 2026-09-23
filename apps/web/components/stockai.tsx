@@ -112,6 +112,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [create, setCreate] = useState(false);
   const [importXml, setImportXml] = useState(false);
+  const [xmlBusy, setXmlBusy] = useState(false);
   const [mobile, setMobile] = useState(false);
   const [toast, setToast] = useState('');
   const [period, setPeriod] = useState('week');
@@ -735,8 +736,18 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
         />
       )}
       {importXml && live && (
-        <Modal title="Importar XML da NF-e" onClose={() => setImportXml(false)}>
+        <Modal
+          title="Importar XML da NF-e"
+          onClose={() => {
+            if (!xmlBusy) setImportXml(false);
+          }}
+        >
           <XmlImport
+            onBusyChange={setXmlBusy}
+            onProgress={(result) => {
+              setReceipts(z.array(receiptSchema).parse(result.receipts));
+              router.refresh();
+            }}
             onImported={(result) => {
               setReceipts(z.array(receiptSchema).parse(result.receipts));
               setImportXml(false);
@@ -1062,7 +1073,10 @@ function Modal({
   return (
     <dialog
       ref={dialog}
-      onCancel={onClose}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
       className="dialog"
       aria-label={title}
       onClick={(e) => {

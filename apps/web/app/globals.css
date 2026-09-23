@@ -3040,3 +3040,63 @@ select:focus {
 .order-mobile-nav .nav-item::before {
   display: none;
 }
+
+.xml-batch-summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+}
+.xml-batch-summary strong {
+  color: var(--ink);
+}
+.xml-batch-list {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 4px;
+}
+.xml-batch-file {
+  display: flex;
+  text-align: left;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.xml-batch-file.selected {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.xml-batch-file span {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.xml-batch-file small {
+  color: var(--muted);
+}
+.xml-batch-file b {
+  font-size: 11px;
+  color: var(--accent);
+  flex-shrink: 0;
+  max-width: 135px;
+}
+.xml-review {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .xml-batch-file {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .xml-batch-file b {
+    max-width: none;
+  }
+}
