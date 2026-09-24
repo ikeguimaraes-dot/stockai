@@ -23,6 +23,7 @@ export type Receipt = {
   invoiceSeries?: string;
   invoiceTotalCents?: number;
   date: string;
+  dateSource?: 'xml' | 'emission' | 'registration';
   time: string;
   status: ReceiptStatus;
   lines: ReceiptLine[];

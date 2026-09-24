@@ -801,6 +801,8 @@ export type Database = {
           issued_at: string | null
           notes: string
           org_id: string
+          reference_date: string
+          reference_date_source: string
           request_id: string
           revision: number
           status: string
@@ -821,6 +823,8 @@ export type Database = {
           issued_at?: string | null
           notes?: string
           org_id: string
+          reference_date: string
+          reference_date_source: string
           request_id: string
           revision?: number
           status?: string
@@ -841,6 +845,8 @@ export type Database = {
           issued_at?: string | null
           notes?: string
           org_id?: string
+          reference_date?: string
+          reference_date_source?: string
           request_id?: string
           revision?: number
           status?: string

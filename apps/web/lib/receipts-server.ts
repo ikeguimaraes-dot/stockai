@@ -17,7 +17,7 @@ export async function getWorkspace() {
       .select(
         '*,suppliers:stockai_suppliers(name),units:stockai_units(name,legal_name,tax_id),receipt_lines:stockai_receipt_lines(*,items:stockai_items(name,base_uom))',
       )
-      .order('created_at', { ascending: false })
+      .order('reference_date', { ascending: false })
       .limit(500),
     client.from('stockai_units').select('id,name,org_id,legal_name,tax_id'),
     client.from('stockai_orgs').select('id,name'),
@@ -49,7 +49,8 @@ export async function getWorkspace() {
     unitId: r.unit_id,
     companyLegalName: r.units?.legal_name ?? undefined,
     companyTaxId: r.units?.tax_id ?? undefined,
-    date: new Date(r.created_at).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }),
+    date: r.reference_date,
+    dateSource: r.reference_date_source as Receipt['dateSource'],
     time: new Date(r.created_at).toLocaleTimeString('pt-BR', {
       timeZone: 'America/Sao_Paulo',
       hour: '2-digit',

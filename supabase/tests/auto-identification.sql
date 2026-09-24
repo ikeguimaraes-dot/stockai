@@ -31,6 +31,7 @@ do $$ declare v_result jsonb:=current_setting('test.result')::jsonb; begin
  if not exists(select 1 from public.stockai_items where org_id=current_setting('test.org')::uuid and name='Leite [CX de compra]' and base_uom='UN' and internal_code='AUTO-0001' and composes_cmv is null) then raise exception 'Purchase unit missing';end if;
  if not exists(select 1 from public.stockai_receipt_lines where receipt_id=(v_result->>'receipt_id')::uuid and source_item_number=2 and invoiced_qty=2 and source_data->>'commercialUnit'='CX') then raise exception 'Box quantity changed';end if;
  if exists(select 1 from public.stockai_stock_movements where org_id=current_setting('test.org')::uuid) then raise exception 'Auto import changed stock';end if;
+ if not exists(select 1 from public.stockai_receipts where id=(v_result->>'receipt_id')::uuid and reference_date='2026-09-18' and reference_date_source='emission') then raise exception 'Missing emission fallback';end if;
  if public.stockai_auto_identify_xml(current_setting('test.inbox')::uuid,current_setting('test.company')::uuid)->>'created_products'<>'0' then raise exception 'Retry created products';end if;
 end $$;
 -- A second note must preserve a deliberately changed, saved conversion.
@@ -38,10 +39,12 @@ reset role;
 update public.stockai_product_links set factor=6 where org_id=current_setting('test.org')::uuid and supplier_code='B2';
 set local role authenticated;
 select set_config('test.secondxml',replace(replace(current_setting('test.xml'),'35260911222333000181550010000001231123456783','35260911222333000181550010000001241123456780'),'<nNF>123</nNF>','<nNF>124</nNF>'),true);
+select set_config('test.secondxml',replace(current_setting('test.secondxml'),'</ide>','<dhSaiEnt>2026-09-30T23:30:00-03:00</dhSaiEnt></ide>'),true);
 select set_config('test.second',public.stockai_queue_xml('second.xml',current_setting('test.secondxml'),gen_random_uuid())::text,true);
 select set_config('test.secondresult',public.stockai_auto_identify_xml(current_setting('test.second')::uuid,current_setting('test.company')::uuid)::text,true);
 do $$ begin
  if current_setting('test.secondresult')::jsonb->>'created_products'<>'0' then raise exception 'Products recreated';end if;
+ if not exists(select 1 from public.stockai_receipts where id=(current_setting('test.secondresult')::jsonb->>'receipt_id')::uuid and reference_date='2026-09-30' and reference_date_source='xml') then raise exception 'XML local departure date not preserved';end if;
  if not exists(select 1 from public.stockai_receipt_lines where receipt_id=(current_setting('test.secondresult')::jsonb->>'receipt_id')::uuid and source_item_number=2 and invoiced_qty=12) then raise exception 'Saved conversion overwritten';end if;
 end $$;
 -- An invalid authorization with a new product must roll back that product and link.

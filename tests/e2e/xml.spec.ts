@@ -189,7 +189,11 @@ test('database: durable XML inbox, learned mapping and receipt revisions', async
   await page.getByLabel('Arquivo XML da NF-e').setInputFiles({
     name: 'nota-125-auto.xml',
     mimeType: 'application/xml',
-    buffer: Buffer.from(invoice(125).replace('<cProd>B2</cProd>', '<cProd>NOVO</cProd>')),
+    buffer: Buffer.from(
+      invoice(125)
+        .replace('<cProd>B2</cProd>', '<cProd>NOVO</cProd>')
+        .replace('</ide>', '<dhSaiEnt>2026-10-31T23:30:00-03:00</dhSaiEnt></ide>'),
+    ),
   });
   await expect(
     page.getByRole('dialog').getByText('Salva para identificação', { exact: true }),
@@ -203,6 +207,20 @@ test('database: durable XML inbox, learned mapping and receipt revisions', async
   await expect(page.getByRole('button', { name: /nota-125-auto.xml/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /invalido.xml/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /outra-empresa.xml/ })).toBeVisible();
+  await page.goto('/operacao');
+  await page.getByRole('button', { name: 'Recebimentos', exact: true }).click();
+  await expect(page.getByLabel('Mês de referência').locator('option[value="2026-09"]')).toHaveText(
+    'setembro de 2026 (2)',
+  );
+  await page.getByLabel('Mês de referência').selectOption('2026-10');
+  await expect(page.getByRole('button', { name: /Abrir recebimento de/ })).toHaveCount(1);
+  await expect(page.getByText('Saída/entrada do XML', { exact: true })).toBeVisible();
+  await page.getByLabel('Mês de referência').selectOption('2026-09');
+  await expect(page.getByRole('button', { name: /Abrir recebimento de/ })).toHaveCount(2);
+  await expect(page.getByText('Emissão (sem saída/entrada)', { exact: true })).toHaveCount(2);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '/tmp/stockai-reference-month-mobile.png', fullPage: true });
   await page.goto('/produtos');
   await expect(page.getByText('Leite [CX de compra]', { exact: true })).toBeVisible();
   await expect(page.getByText('AUTO-0001 · UN · Sem categoria', { exact: true })).toBeVisible();

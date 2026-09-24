@@ -71,6 +71,7 @@ const receiptSchema = z.object({
   invoiceSeries: z.string().optional(),
   invoiceTotalCents: z.number().int().nonnegative().optional(),
   date: z.string(),
+  dateSource: z.enum(['xml', 'emission', 'registration']).optional(),
   time: z.string(),
   status: z.enum(['counting', 'pending_approval', 'closed']),
   lines: z
@@ -122,6 +123,7 @@ export function Stockai({
   const [unit, setUnit] = useState('Todas as empresas');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [receiptMonth, setReceiptMonth] = useState('all');
   const [selected, setSelected] = useState<string | null>(null);
   const [create, setCreate] = useState(false);
   const [importXml, setImportXml] = useState(false);
@@ -168,7 +170,8 @@ export function Stockai({
   const filtered = scoped.filter(
     (r) =>
       `${r.supplier} ${r.invoice} ${r.category}`.toLowerCase().includes(search.toLowerCase()) &&
-      (filter === 'all' || r.status === filter),
+      (filter === 'all' || r.status === filter) &&
+      (receiptMonth === 'all' || r.date.startsWith(receiptMonth)),
   );
   const xmlScope =
     live?.xmlInbox.filter((x) => unit === 'Todas as empresas' || x.unit_id === unit) ?? [];
@@ -550,7 +553,7 @@ export function Stockai({
               <div className="panel-heading">
                 <div className="title-with-count">
                   <h2>{page === 'overview' ? 'Últimos recebimentos' : 'Todos os recebimentos'}</h2>
-                  <span className="count-pill">{scoped.length}</span>
+                  <span className="count-pill">{filtered.length}</span>
                 </div>
                 {page === 'overview' ? (
                   <button className="text-button" onClick={() => navigate('receipts')}>
@@ -597,6 +600,24 @@ export function Stockai({
                 </div>
               )}
               <div className="table-toolbar">
+                <label className="xml-field">
+                  Mês de referência
+                  <select value={receiptMonth} onChange={(e) => setReceiptMonth(e.target.value)}>
+                    <option value="all">Todos os meses</option>
+                    {[...new Set(scoped.map((r) => r.date.slice(0, 7)))]
+                      .sort()
+                      .reverse()
+                      .map((month) => (
+                        <option key={month} value={month}>
+                          {new Date(month + '-01T12:00:00').toLocaleDateString('pt-BR', {
+                            month: 'long',
+                            year: 'numeric',
+                          })}{' '}
+                          ({scoped.filter((r) => r.date.startsWith(month)).length})
+                        </option>
+                      ))}
+                  </select>
+                </label>
                 <div className="tabs">
                   {[
                     ['all', 'Todos'],
@@ -896,7 +917,7 @@ function ReceiptTable({
           <tr>
             <th>FORNECEDOR / NOTA</th>
             <th>EMPRESA</th>
-            <th>RECEBIDO EM</th>
+            <th>DATA DE REFERÊNCIA</th>
             <th>VALOR DA NOTA</th>
             <th>STATUS</th>
             <th />
@@ -939,7 +960,13 @@ function ReceiptTable({
                     .toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
                     .replace('.', '')}
                 </span>
-                <small>{r.time}</small>
+                <small>
+                  {r.dateSource === 'emission'
+                    ? 'Emissão (sem saída/entrada)'
+                    : r.dateSource === 'xml'
+                      ? 'Saída/entrada do XML'
+                      : 'Cadastro no sistema'}
+                </small>
               </td>
               <td className="amount">{money(r.invoiceTotalCents ?? receiptTotals(r).fiscal)}</td>
               <td>

@@ -174,6 +174,17 @@ export function NoteEditor({
                 />
               </label>
               <label className="xml-field">
+                Data de referência
+                <input type="date" readOnly value={note.reference_date} />
+                <small>
+                  {note.reference_date_source === 'xml'
+                    ? 'Saída/entrada informada no XML.'
+                    : note.reference_date_source === 'emission'
+                      ? 'Data de emissão usada porque o XML não informa saída/entrada.'
+                      : 'Data de cadastro no sistema.'}
+                </small>
+              </label>
+              <label className="xml-field">
                 Total da nota (R$)
                 <input
                   name="total"
