@@ -11,14 +11,29 @@ export async function getWorkspace() {
     error: authError,
   } = await client.auth.getUser();
   if (authError || !user) throw new Error('UNAUTHENTICATED');
+  async function allReceipts() {
+    const page = (start: number) =>
+      client
+        .from('stockai_receipts')
+        .select(
+          '*,suppliers:stockai_suppliers(name),units:stockai_units(name,legal_name,tax_id),receipt_lines:stockai_receipt_lines(*,items:stockai_items(name,base_uom))',
+        )
+        .order('reference_date', { ascending: false })
+        .order('id')
+        .range(start, start + 499);
+    const first = await page(0);
+    if (first.error) return first;
+    let count = first.data.length;
+    for (let start = 500; count === 500; start += 500) {
+      const next = await page(start);
+      if (next.error) return next;
+      count = next.data.length;
+      first.data.push(...next.data);
+    }
+    return first;
+  }
   const [result, unitResult, orgResult, membershipResult, balanceResult] = await Promise.all([
-    client
-      .from('stockai_receipts')
-      .select(
-        '*,suppliers:stockai_suppliers(name),units:stockai_units(name,legal_name,tax_id),receipt_lines:stockai_receipt_lines(*,items:stockai_items(name,base_uom))',
-      )
-      .order('reference_date', { ascending: false })
-      .limit(500),
+    allReceipts(),
     client.from('stockai_units').select('id,name,org_id,legal_name,tax_id'),
     client.from('stockai_orgs').select('id,name'),
     client.from('stockai_memberships').select('org_id,unit_id,role'),

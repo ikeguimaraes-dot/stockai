@@ -329,6 +329,9 @@ export function Identification({
               Reprocessar pendentes
             </button>
           </div>
+          <Link className="secondary" href="/devolucoes">
+            Ver NF-e de devolução
+          </Link>
           {error && (
             <p role="alert" className="xml-error">
               {error}

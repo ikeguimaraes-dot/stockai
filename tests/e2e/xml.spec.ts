@@ -224,4 +224,31 @@ test('database: durable XML inbox, learned mapping and receipt revisions', async
   await page.goto('/produtos');
   await expect(page.getByText('Leite [CX de compra]', { exact: true })).toBeVisible();
   await expect(page.getByText('AUTO-0001 · UN · Sem categoria', { exact: true })).toBeVisible();
+  const returnXml = invoice(126)
+    .replace('<finNFe>1</finNFe>', '<finNFe>4</finNFe>')
+    .replace('<tpNF>1</tpNF>', '<tpNF>0</tpNF>');
+  const queuedReturn = await page.request.post('/api/xml-inbox', {
+    headers: { origin: new URL(page.url()).origin },
+    data: {
+      action: 'queue',
+      filename: 'devolucao-126.xml',
+      xml: returnXml,
+      requestId: '86666666-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    },
+  });
+  expect(queuedReturn.ok()).toBeTruthy();
+  expect((await queuedReturn.json()).status).toBe('pending');
+  await page.goto('/devolucoes');
+  await expect(page.getByRole('heading', { name: 'NF-e de devolução', exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'NF-e 126 · Série 1' })).toBeVisible();
+  await expect(
+    page.getByText('Destinatário: Empresa XML Teste · CNPJ 12345678000195'),
+  ).toBeVisible();
+  const download = await page
+    .getByRole('link', { name: 'Baixar XML original' })
+    .getAttribute('href');
+  expect(await (await page.request.get(download!)).text()).toBe(returnXml);
+  await page.screenshot({ path: '/tmp/stockai-return-invoices.png', fullPage: true });
+  await page.goto('/contas-a-pagar');
+  await expect(page.getByText('3 com recebimento · 0 aguardando identificação')).toBeVisible();
 });

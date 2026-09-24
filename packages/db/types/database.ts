@@ -1284,6 +1284,22 @@ export type Database = {
         }
         Returns: string
       }
+      stockai_return_invoices: {
+        Args: never
+        Returns: {
+          access_key: string
+          filename: string
+          id: string
+          invoice_number: string
+          invoice_series: string
+          issued_on: string
+          nature: string
+          recipient: string
+          recipient_tax_id: string
+          supplier: string
+          total_cents: number
+        }[]
+      }
       stockai_save_category: {
         Args: { p_id?: string; p_name: string; p_org: string }
         Returns: string

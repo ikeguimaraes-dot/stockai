@@ -184,6 +184,15 @@ export function Payables({
             </button>
           </header>
           <div className="payable-stats">
+            <div className="panel">
+              <span className="muted">NF-e no Contas a pagar</span>
+              <strong>{scoped.filter((b) => b.source === 'xml').length}</strong>
+              <small>
+                {scoped.filter((b) => b.source === 'xml' && b.receipt_id).length} com recebimento ·{' '}
+                {scoped.filter((b) => b.source === 'xml' && !b.receipt_id).length} aguardando
+                identificação
+              </small>
+            </div>
             {[
               ['Em aberto', money(active.reduce((n, b) => n + remaining(b), 0))],
               [
@@ -207,6 +216,14 @@ export function Payables({
             As notas geram contas automaticamente, inclusive durante a identificação dos produtos.
             Registre a baixa somente depois de confirmar o pagamento.
           </p>
+          <div className="catalog-filters">
+            <Link className="primary" href="/contas-a-pagar" aria-current="page">
+              Contas a pagar
+            </Link>
+            <Link className="secondary" href="/devolucoes">
+              NF-e de devolução
+            </Link>
+          </div>
           <div className="company-toolbar payable-toolbar">
             <label className="xml-field">
               Empresa

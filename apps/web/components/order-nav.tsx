@@ -3,10 +3,18 @@ import { ClipboardList, Truck, ScanLine, Wallet } from 'lucide-react';
 export function OrderNav({
   active,
 }: {
-  active?: 'orders' | 'deliveries' | 'identification' | 'payables';
+  active?: 'orders' | 'deliveries' | 'identification' | 'payables' | 'returns';
 }) {
   return (
     <>
+      <Link
+        href="/devolucoes"
+        className={`nav-item ${active === 'returns' ? 'active' : ''}`}
+        aria-current={active === 'returns' ? 'page' : undefined}
+      >
+        <ClipboardList size={19} />
+        <span>NF-e de devolução</span>
+      </Link>
       <Link
         href="/contas-a-pagar"
         className={`nav-item ${active === 'payables' ? 'active' : ''}`}

@@ -62,12 +62,19 @@ set constraints all immediate;
 do $$ begin
  if (select count(*) from public.stockai_payables where org_id=current_setting('test.org')::uuid)<>2 then raise exception 'Payables duplicated or missing';end if;
 end $$;
+-- Devolutions stay readable in their own area, never becoming payables or receipts.
+select set_config('test.return',public.stockai_queue_xml('return.xml',replace(replace(current_setting('test.xml'),'<finNFe>1</finNFe>','<finNFe>4</finNFe>'),'<tpNF>1</tpNF>','<tpNF>0</tpNF>'),gen_random_uuid())::text,true);
+do $$ begin
+ if not exists(select 1 from public.stockai_return_invoices() where id=current_setting('test.return')::uuid and invoice_number='123' and total_cents=19000) then raise exception 'Return not listed';end if;
+ if (select count(*) from public.stockai_return_invoices())<>1 then raise exception 'Non-return listed';end if;
+end $$;
 -- Neither a different tenant nor an operator may create products through this endpoint.
 reset role;
 insert into public.stockai_memberships(org_id,unit_id,user_id,role) values(current_setting('test.org')::uuid,current_setting('test.company')::uuid,'42222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa','operator');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','42222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
 do $$ begin
+ if exists(select 1 from public.stockai_return_invoices()) then raise exception 'Operator accessed return inbox';end if;
  begin perform public.stockai_auto_identify_xml(current_setting('test.inbox')::uuid,current_setting('test.company')::uuid);raise exception 'Operator accessed manager XML';exception when insufficient_privilege then null;end;
 end $$;
 rollback;
