@@ -84,6 +84,32 @@ test('database: supplier references are searchable before any receipt', async ({
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: '/tmp/stockai-suppliers-base-mobile.png', fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await card.getByRole('link', { name: 'Ver cadastro' }).click();
+  await expect(page.getByRole('heading', { name: 'Fornecedor Base' })).toBeVisible();
+  await page.getByLabel('Pessoa de contato').fill('Maria');
+  await page.getByLabel('Telefone / WhatsApp').fill('11999990000');
+  await page.getByRole('button', { name: 'Salvar fornecedor' }).click();
+  await expect(page.getByRole('status')).toContainText('Fornecedor salvo');
+  await page.reload();
+  await expect(page.getByLabel('Pessoa de contato')).toHaveValue('Maria');
+  await expect(page.getByLabel('CNPJ', { exact: true })).toHaveValue('');
+  await page.getByRole('link', { name: '← Fornecedores' }).click();
+  await page.getByRole('link', { name: 'Novo fornecedor' }).click();
+  await page.getByLabel('Nome do fornecedor').fill('Fornecedor sem documento');
+  await page.getByRole('button', { name: 'Salvar fornecedor' }).click();
+  await expect(page).toHaveURL(/\/fornecedores\/[0-9a-f-]{36}/);
+  await page.reload();
+  await expect(page.getByLabel('Nome do fornecedor')).toHaveValue('Fornecedor sem documento');
+  await page.getByLabel('CNPJ', { exact: true }).fill('11.222.333/0001-81');
+  await page.getByLabel('E-mail', { exact: true }).fill('contato@fornecedor.com.br');
+  await page.getByRole('button', { name: 'Salvar fornecedor' }).click();
+  await expect(page.getByRole('status')).toContainText('Fornecedor salvo');
+  await page.reload();
+  await expect(page.getByLabel('CNPJ', { exact: true })).toHaveValue('11222333000181');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '/tmp/stockai-supplier-profile-mobile.png', fullPage: true });
   const product = await fetch(`${url}/rest/v1/stockai_items`, {
     method: 'POST',
     headers: adminHeaders,

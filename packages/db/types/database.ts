@@ -821,37 +821,58 @@ export type Database = {
       }
       stockai_suppliers: {
         Row: {
+          address: string | null
           aliases: string[]
+          contact_name: string | null
           created_at: string
+          email: string | null
           id: string
+          legal_name: string | null
           name: string
+          notes: string | null
           org_id: string
+          phone: string | null
           reference_labels: string[]
           review_note: string | null
+          revision: number
           source_name: string | null
           source_references: Json
           tax_id: string | null
         }
         Insert: {
+          address?: string | null
           aliases?: string[]
+          contact_name?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          legal_name?: string | null
           name: string
+          notes?: string | null
           org_id: string
+          phone?: string | null
           reference_labels?: string[]
           review_note?: string | null
+          revision?: number
           source_name?: string | null
           source_references?: Json
           tax_id?: string | null
         }
         Update: {
+          address?: string | null
           aliases?: string[]
+          contact_name?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          legal_name?: string | null
           name?: string
+          notes?: string | null
           org_id?: string
+          phone?: string | null
           reference_labels?: string[]
           review_note?: string | null
+          revision?: number
           source_name?: string | null
           source_references?: Json
           tax_id?: string | null
@@ -1092,6 +1113,15 @@ export type Database = {
           p_name: string
           p_org: string
           p_uom: string
+        }
+        Returns: string
+      }
+      stockai_save_supplier: {
+        Args: {
+          p_data: Json
+          p_id?: string
+          p_org: string
+          p_revision?: number
         }
         Returns: string
       }

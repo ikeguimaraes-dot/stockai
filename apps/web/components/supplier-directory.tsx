@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { useState } from 'react';
 import { Truck, Search, ArrowRight } from 'lucide-react';
 import { receiptTotals, type Receipt } from '@stockai/core';
@@ -62,6 +63,9 @@ export function SupplierDirectory({
           Somente cadastros para revisar
         </label>
         <span>{filtered.length} fornecedor(es)</span>
+        <Link className="primary" href="/fornecedores/novo">
+          Novo fornecedor
+        </Link>
       </div>
       <p className="muted supplier-base-note">
         Cadastros do grupo, incluindo fornecedores sem recebimentos. As referências da planilha
@@ -110,6 +114,9 @@ export function SupplierDirectory({
                   {money(list.reduce((n, r) => n + receiptTotals(r).credit, 0))}
                 </strong>
               </div>
+              <Link className="primary full" href={`/fornecedores/${s.id}`}>
+                Ver cadastro
+              </Link>
               <button
                 className="secondary full"
                 disabled={!list.length}

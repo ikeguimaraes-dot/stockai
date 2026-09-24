@@ -24,6 +24,7 @@ export const config = {
     '/operacao/:path*',
     '/empresas',
     '/produtos',
+    '/fornecedores/:path*',
     '/identificacao',
     '/notas/:path*',
     '/login',

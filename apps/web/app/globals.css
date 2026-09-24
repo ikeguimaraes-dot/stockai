@@ -3199,7 +3199,8 @@ select:focus {
   }
 }
 
-.note-page .xml-field input {
+.note-page .xml-field input,
+.supplier-profile .xml-field input {
   width: 100%;
   min-width: 0;
   padding: 11px;
@@ -3278,4 +3279,54 @@ select:focus {
 .supplier-card h2,
 .supplier-card p {
   overflow-wrap: anywhere;
+}
+
+.supplier-profile {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+.supplier-profile header {
+  margin: 28px 0;
+  overflow-wrap: anywhere;
+}
+.supplier-profile-form {
+  padding: 24px;
+  display: grid;
+  gap: 20px;
+}
+.supplier-profile-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.supplier-wide {
+  grid-column: 1 / -1;
+}
+.supplier-profile textarea {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  font: inherit;
+  padding: 12px;
+  border: 1px solid #d9cde4;
+  border-radius: 10px;
+}
+.supplier-card > a {
+  margin: 12px 0;
+}
+@media (max-width: 600px) {
+  .supplier-profile {
+    padding: 20px 14px;
+  }
+  .supplier-profile-form {
+    padding: 16px;
+  }
+  .supplier-profile-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

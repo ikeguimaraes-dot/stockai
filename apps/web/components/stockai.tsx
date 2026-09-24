@@ -104,9 +104,15 @@ type LiveWorkspace = {
   orgName: string;
   email: string;
 };
-export function Stockai({ live }: { live?: LiveWorkspace }) {
+export function Stockai({
+  live,
+  initialPage = 'overview',
+}: {
+  live?: LiveWorkspace;
+  initialPage?: Page;
+}) {
   const router = useRouter();
-  const [page, setPage] = useState<Page>('overview');
+  const [page, setPage] = useState<Page>(initialPage);
   const [receipts, setReceipts] = useState<Receipt[]>(live?.initialReceipts ?? demoReceipts);
   const [ready, setReady] = useState(false);
   const [unit, setUnit] = useState('Todas as empresas');
