@@ -1,13 +1,40 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Menu } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 export function ThemeSwitch() {
+  const pathname = usePathname();
   const [light, setLight] = useState(false);
   useEffect(() => {
     setLight(document.documentElement.dataset.theme === 'light');
   }, []);
   return (
     <header className="theme-header">
+      {pathname !== '/login' && pathname !== '/' && (
+        <details className="mobile-navigation" key={pathname}>
+          <summary>
+            <Menu size={18} /> Menu
+          </summary>
+          <nav aria-label="Menu móvel">
+            {[
+              ['/operacao', 'Recebimentos e visão geral'],
+              ['/produtos', 'Produtos'],
+              ['/empresas', 'Empresas'],
+              ['/fornecedores', 'Fornecedores'],
+              ['/identificacao', 'Identificação'],
+              ['/contas-a-pagar', 'Contas a pagar'],
+              ['/devolucoes', 'NF-e de devolução'],
+              ['/pedidos', 'Pedidos'],
+              ['/entregas', 'Entregas'],
+            ].map(([href, label]) => (
+              <Link href={href} key={href} aria-current={pathname === href ? 'page' : undefined}>
+                {label}
+              </Link>
+            ))}
+          </nav>
+        </details>
+      )}
       <span>Aparência</span>
       <button
         type="button"

@@ -2,7 +2,7 @@
 import { OrderNav } from './order-nav';
 import { useMemo, useState } from 'react';
 import { similarProducts } from '@stockai/core';
-import { ProductCode } from './product-code';
+import { SimilarProductCard } from './similar-product-card';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -37,6 +37,7 @@ export function ProductDirectory({
   const similar = useMemo(() => similarProducts(items), [items]);
   const [filter, setFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [pagination, setPagination] = useState({ key: '', page: 0 });
   const [editing, setEditing] = useState<Item | 'new' | null>(null);
   const [category, setCategory] = useState<Category | 'new' | null>(null);
   const [busy, setBusy] = useState(false);
@@ -60,6 +61,10 @@ export function ProductDirectory({
       (a, b) =>
         a.name.localeCompare(b.name, 'pt-BR') || a.internal_code.localeCompare(b.internal_code),
     );
+  const similarRows = filtered.filter((i) => similar.has(i.id));
+  const pageKey = `${orgId}:${search}:${filter}:${categoryFilter}`;
+  const pageCount = Math.max(1, Math.ceil(similarRows.length / 24));
+  const currentPage = pagination.key === pageKey ? Math.min(pagination.page, pageCount - 1) : 0;
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -149,7 +154,7 @@ export function ProductDirectory({
               </div>
             )}
           </div>
-          <div className="catalog-filters">
+          <div className="catalog-tabs" role="group" aria-label="Visualização dos produtos">
             <button
               className={tab === 'catalog' ? 'primary' : 'secondary'}
               onClick={() => setTab('catalog')}
@@ -162,6 +167,8 @@ export function ProductDirectory({
             >
               Nomes parecidos
             </button>
+          </div>
+          <div className="catalog-filters">
             <label>
               Grupo
               <select
@@ -407,49 +414,45 @@ export function ProductDirectory({
           {tab === 'similar' && (
             <section className="panel">
               <p className="similar-help">
-                Produtos com nomes parecidos, em ordem alfabética. Confira marca, unidade e
-                embalagem antes de concluir que são iguais. Alterar o código atualiza o cadastro em
-                todas as notas; não une produtos.
+                Compare os produtos em ordem alfabética. Corrija o nome do cadastro ou vincule os
+                códigos do fornecedor a um produto existente. Confira marca, unidade e embalagem.
               </p>
-              <div className="table-scroll">
-                <table className="similar-products-table">
-                  <thead>
-                    <tr>
-                      <th>Produto (A–Z)</th>
-                      <th>Nosso código</th>
-                      <th>Unidade</th>
-                      <th>Nomes parecidos</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered
-                      .filter((i) => similar.has(i.id))
-                      .map((i) => (
-                        <tr key={i.id}>
-                          <td>
-                            <Link href={`/produtos/${i.id}`}>
-                              <strong>{i.name}</strong>
-                            </Link>
-                          </td>
-                          <td>
-                            <ProductCode itemId={i.id} code={i.internal_code} editable={allowed} />
-                          </td>
-                          <td>{i.base_uom}</td>
-                          <td>
-                            {(similar.get(i.id) ?? [])
-                              .map((id) => items.find((p) => p.id === id))
-                              .filter(Boolean)
-                              .map((p) => (
-                                <div key={p!.id}>
-                                  {p!.name} · {p!.internal_code}
-                                </div>
-                              ))}
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+              <div className="similar-list">
+                {similarRows.slice(currentPage * 24, (currentPage + 1) * 24).map((i) => (
+                  <SimilarProductCard
+                    key={i.id}
+                    item={i}
+                    items={items.filter((p) => p.org_id === orgId)}
+                    matches={(similar.get(i.id) ?? []).flatMap(
+                      (id) => items.find((p) => p.id === id) ?? [],
+                    )}
+                    editable={allowed}
+                  />
+                ))}
               </div>
+              {similarRows.length > 24 && (
+                <nav className="similar-pagination" aria-label="Páginas de nomes parecidos">
+                  <span>
+                    {similarRows.length} produtos · Página {currentPage + 1} de {pageCount}
+                  </span>
+                  <div className="heading-actions">
+                    <button
+                      className="secondary"
+                      disabled={currentPage === 0}
+                      onClick={() => setPagination({ key: pageKey, page: currentPage - 1 })}
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      className="secondary"
+                      disabled={currentPage + 1 >= pageCount}
+                      onClick={() => setPagination({ key: pageKey, page: currentPage + 1 })}
+                    >
+                      Próxima
+                    </button>
+                  </div>
+                </nav>
+              )}
               {!filtered.some((i) => similar.has(i.id)) && (
                 <p className="similar-help">Nenhum nome parecido encontrado com estes filtros.</p>
               )}

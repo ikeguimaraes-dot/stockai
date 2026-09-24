@@ -22,6 +22,7 @@ test('database: internal codes, categories and CMV persist through edits', async
     body: JSON.stringify({ email, password, email_confirm: true }),
   });
   expect(response.ok).toBeTruthy();
+  const user = await response.json();
   await page.goto('/login');
   await page.getByLabel('E-mail', { exact: true }).fill(email);
   await page.getByLabel('Senha', { exact: true }).fill(password);
@@ -70,4 +71,102 @@ test('database: internal codes, categories and CMV persist through edits', async
   );
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  const headers = {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    'Content-Type': 'application/json',
+    Prefer: 'return=representation',
+  };
+  async function api(path: string, body?: unknown) {
+    const r = await fetch(`${url}/rest/v1/${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    expect(r.ok, await r.clone().text()).toBeTruthy();
+    return r.json();
+  }
+  const [membership] = await api(`stockai_memberships?user_id=eq.${user.id}&select=org_id`);
+  const [original] = await api(
+    `stockai_items?org_id=eq.${membership.org_id}&internal_code=eq.PAP-02`,
+  );
+  const [target] = await api('stockai_items', {
+    org_id: membership.org_id,
+    name: 'Papel toalhas',
+    internal_code: 'PAP-03',
+    base_uom: 'UN',
+    composes_cmv: false,
+  });
+  const [link] = await api('stockai_product_links', {
+    org_id: membership.org_id,
+    supplier_tax_id: '12345678000195',
+    supplier_code: 'FORN-PAP',
+    updated_by: user.id,
+    source_unit: 'UN',
+    item_id: original.id,
+    factor: 1,
+  });
+  await page.reload();
+  await page.getByRole('button', { name: 'Nomes parecidos', exact: true }).click();
+  const card = page.getByRole('article', { name: 'Papel toalha', exact: true });
+  await expect(card).toBeVisible();
+  for (const width of [320, 390, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      `similar products at ${width}px`,
+    ).toBe(true);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await card.getByRole('button', { name: 'Corrigir nome' }).click();
+  await card.getByLabel('Nosso nome do produto').fill('Papel toalha folha');
+  await card.getByRole('button', { name: 'Salvar nome', exact: true }).click();
+  const renamed = page.getByRole('article', { name: 'Papel toalha folha', exact: true });
+  await expect(renamed).toBeVisible();
+  await renamed.getByRole('button', { name: 'Vincular a PAP-03', exact: true }).click();
+  await expect(renamed.getByLabel('Código do fornecedor a vincular')).toHaveValue(link.id);
+  await expect(
+    renamed.getByRole('combobox', { name: 'Produto existente', exact: true }),
+  ).toHaveValue(target.id);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '/tmp/stockai-similar-mobile.png', fullPage: true });
+  await renamed.getByRole('button', { name: 'Salvar vínculo', exact: true }).click();
+  await expect(renamed.getByRole('status')).toContainText('Vínculo salvo');
+  const [savedLink] = await api(`stockai_product_links?id=eq.${link.id}`);
+  expect(savedLink.item_id).toBe(target.id);
+  const [savedItem] = await api(`stockai_items?id=eq.${original.id}`);
+  expect(savedItem.name).toBe('Papel toalha folha');
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.screenshot({ path: '/tmp/stockai-similar-desktop.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.locator('.mobile-navigation summary').click();
+  await expect(page.getByRole('navigation', { name: 'Menu móvel' })).toBeVisible();
+  await page
+    .getByRole('navigation', { name: 'Menu móvel' })
+    .getByRole('link', { name: 'Pedidos', exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/pedidos$/);
+  for (const route of [
+    '/operacao',
+    '/empresas',
+    '/fornecedores',
+    '/devolucoes',
+    '/identificacao',
+    '/pedidos',
+    '/entregas',
+    '/contas-a-pagar',
+    `/produtos/${target.id}`,
+  ]) {
+    await page.goto(route);
+    for (const width of [320, 768, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect
+        .soft(
+          await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+          `${route} at ${width}px`,
+        )
+        .toBe(true);
+    }
+  }
 });

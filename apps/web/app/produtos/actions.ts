@@ -148,3 +148,42 @@ export async function relinkProduct(
   revalidatePath('/identificacao');
   return { error: null };
 }
+
+export async function getProductSupplierLinks(itemId: string) {
+  if (!z.string().uuid().safeParse(itemId).success) throw new Error('Produto inválido.');
+  const c = await serverClient();
+  const { data: item, error } = await c
+    .from('stockai_items')
+    .select('org_id')
+    .eq('id', itemId)
+    .single();
+  if (error || !item) throw new Error('Produto indisponível.');
+  const links = [];
+  for (let start = 0; ; start += 500) {
+    const { data, error } = await c
+      .from('stockai_product_links')
+      .select('*')
+      .eq('org_id', item.org_id)
+      .eq('item_id', itemId)
+      .order('id')
+      .range(start, start + 499);
+    if (error) throw new Error('Não foi possível carregar os vínculos.');
+    links.push(...data);
+    if (data.length < 500) break;
+  }
+  const suppliers = new Map<string, string>();
+  const taxes = [...new Set(links.map((l) => l.supplier_tax_id))];
+  for (let start = 0; start < taxes.length; start += 100) {
+    const { data, error } = await c
+      .from('stockai_suppliers')
+      .select('tax_id,name')
+      .eq('org_id', item.org_id)
+      .in('tax_id', taxes.slice(start, start + 100));
+    if (error) throw new Error('Não foi possível carregar os fornecedores.');
+    for (const s of data) if (s.tax_id) suppliers.set(s.tax_id, s.name);
+  }
+  return links.map((l) => ({
+    ...l,
+    supplierName: suppliers.get(l.supplier_tax_id) || l.supplier_tax_id,
+  }));
+}
