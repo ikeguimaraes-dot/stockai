@@ -8,13 +8,17 @@ if (process.env.STOCKAI_TEST_DATABASE) {
     throw new Error('Database browser tests only run against the local Supabase.');
   }
 }
-test('demo: blind count, discrepancy, approval and persistence', async ({ page }) => {
+test('demo: quantity comparison, discrepancy, approval and persistence', async ({ page }) => {
   await page.goto('/demo');
   await expect(page.getByRole('heading', { name: 'Tudo sob controle.' })).toBeVisible();
   await page.getByRole('button', { name: 'Abrir recebimento de Frigorífico Prime' }).click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog.getByText('Conte primeiro. Compare depois.')).toBeVisible();
+  await expect(dialog.getByText('Compare com o que chegou.')).toBeVisible();
   await expect(dialog.getByText('Documento fiscal', { exact: true })).toHaveCount(0);
+  await expect(dialog.getByText('Na nota:', { exact: false })).toHaveCount(2);
+  await dialog.getByRole('button', { name: 'Preencher tudo conforme a nota' }).click();
+  await expect(dialog.getByLabel('Quantidade de Filé mignon')).toHaveValue('20');
+  await expect(dialog.getByLabel('Quantidade de Peito de frango')).toHaveValue('30');
   await dialog.getByLabel('Quantidade de Filé mignon').fill('18');
   await dialog.getByLabel('Quantidade de Peito de frango').fill('30');
   await dialog.getByRole('button', { name: 'Finalizar conferência' }).click();
@@ -36,7 +40,9 @@ test('mobile: navigation and no page overflow', async ({ page }) => {
     true,
   );
 });
-test('database: login, manual receipt, blind count and durable approval', async ({ page }) => {
+test('database: login, manual receipt, quantity comparison and durable approval', async ({
+  page,
+}) => {
   test.skip(
     !process.env.STOCKAI_TEST_DATABASE,
     'Requires local Supabase and scripts/setup-local.mjs',
@@ -64,7 +70,9 @@ test('database: login, manual receipt, blind count and durable approval', async 
   await dialog.getByLabel('Qtd. na nota').fill('20');
   await dialog.getByLabel('Preço unit. (R$)').fill('10');
   await dialog.getByRole('button', { name: 'Iniciar conferência' }).click();
-  await expect(dialog.getByText('Conte primeiro. Compare depois.')).toBeVisible();
+  await expect(dialog.getByText('Compare com o que chegou.')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Veio certo: Tomate teste', exact: true }).click();
+  await expect(dialog.getByLabel('Quantidade de Tomate teste')).toHaveValue('20');
   await dialog.getByLabel('Quantidade de Tomate teste').fill('18');
   await dialog.getByRole('button', { name: 'Finalizar conferência' }).click();
   await expect(dialog.getByText('R$ 20,00', { exact: true })).toBeVisible();

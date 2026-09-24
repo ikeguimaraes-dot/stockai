@@ -29,6 +29,7 @@ do $$ declare tab text; n int; column_name text; begin
    begin execute format('delete from public.%I where %I=$1',tab,column_name) using current_setting('test.org_b')::uuid; raise exception 'Direct delete allowed: %',tab; exception when insufficient_privilege then null; end;
    begin execute format('update public.%I set id=id where %I=$1',tab,column_name) using current_setting('test.org_b')::uuid; raise exception 'Direct update allowed: %',tab; exception when insufficient_privilege then null; end;
  end loop;
+ begin perform public.stockai_get_receipt_conference(current_setting('test.receipt_b')::uuid);raise exception 'Conference cross-tenant read';exception when insufficient_privilege then null;end;
  begin perform public.stockai_get_blind_receipt(current_setting('test.receipt_b')::uuid); raise exception 'Blind cross-tenant read'; exception when insufficient_privilege then null; end;
  begin perform public.stockai_approve_receipt(current_setting('test.receipt_b')::uuid); raise exception 'Cross-tenant approval'; exception when insufficient_privilege then null; end;
  begin perform public.stockai_create_receipt(current_setting('test.unit_b')::uuid,'X','X','[]',gen_random_uuid()); raise exception 'Cross-tenant creation'; exception when insufficient_privilege then null; end;
@@ -43,11 +44,16 @@ do $$ declare data jsonb; begin
  if exists(select 1 from stockai_receipts) or exists(select 1 from stockai_receipt_lines) or exists(select 1 from stockai_stock_movements) or exists(select 1 from stockai_supplier_claims) then raise exception 'Operator sees financial data'; end if;
  data:=public.stockai_get_blind_receipt(current_setting('test.receipt_a')::uuid);
  if data is null or data::text~'invoiced|price|counted|payable' then raise exception 'Blind payload leaks expected quantities or prices'; end if;
+ data:=public.stockai_get_receipt_conference(current_setting('test.receipt_a')::uuid);
+ if (data->'lines'->0->>'invoiced')::numeric is distinct from 20 then raise exception 'Conference omitted expected quantity';end if;
+ if data::text~'price|payable|credit' then raise exception 'Conference leaked financial data';end if;
  begin perform public.stockai_approve_receipt(current_setting('test.receipt_a')::uuid); raise exception 'Operator can approve'; exception when insufficient_privilege then null; end;
  if public.stockai_submit_receipt_count(current_setting('test.receipt_a')::uuid,jsonb_build_object(current_setting('test.line_a'),18))<>'pending_approval' then raise exception 'Shortage not pending'; end if;
 end $$;
 select set_config('request.jwt.claim.sub','dddddddd-dddd-4ddd-8ddd-dddddddddddd',true);
-do $$ begin if exists(select 1 from stockai_orgs) or exists(select 1 from stockai_receipt_lines) then raise exception 'Expired membership retained access'; end if; end $$;
+do $$ begin
+ begin perform public.stockai_get_receipt_conference(current_setting('test.receipt_a')::uuid);raise exception 'Expired conference access';exception when insufficient_privilege then null;end;
+ if exists(select 1 from stockai_orgs) or exists(select 1 from stockai_receipt_lines) then raise exception 'Expired membership retained access'; end if; end $$;
 select set_config('request.jwt.claim.sub','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
 select public.stockai_approve_receipt(current_setting('test.receipt_a')::uuid);
 select public.stockai_approve_receipt(current_setting('test.receipt_a')::uuid);

@@ -1,7 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { Boxes, ShieldCheck, Check } from 'lucide-react';
-export function BlindCount({
+import { ReceiptCountFields, type CountLine } from './receipt-count-fields';
+import { Boxes, Check } from 'lucide-react';
+export function ReceiptConference({
   receipt,
 }: {
   receipt: {
@@ -9,15 +10,16 @@ export function BlindCount({
     supplier: string;
     unit: string;
     status: string;
-    lines: { id: string; name: string; uom: string }[];
+    lines: CountLine[];
   };
 }) {
+  const [counts, setCounts] = useState<Record<string, string>>({});
   const [done, setDone] = useState(receipt.status !== 'counting');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   return (
     <div className="setup-page">
-      <section className="panel" style={{ width: 560, maxWidth: '100%', padding: 24 }}>
+      <section className="panel" style={{ width: 850, maxWidth: '100%', padding: 24 }}>
         <div className="eyebrow">
           <Boxes size={23} />
         </div>
@@ -37,7 +39,7 @@ export function BlindCount({
               e.preventDefault();
               setBusy(true);
               setError('');
-              const form = new FormData(e.currentTarget);
+
               try {
                 const response = await fetch('/api/receipts', {
                   method: 'POST',
@@ -46,7 +48,10 @@ export function BlindCount({
                     action: 'count',
                     id: receipt.id,
                     counts: Object.fromEntries(
-                      receipt.lines.map((l) => [l.id, Number(form.get(l.id))]),
+                      receipt.lines.map((l) => [
+                        l.id,
+                        counts[l.id]?.trim() ? Number(counts[l.id]) : NaN,
+                      ]),
                     ),
                   }),
                 });
@@ -60,33 +65,12 @@ export function BlindCount({
               }
             }}
           >
-            <div className="info-banner">
-              <ShieldCheck size={22} />
-              <p>
-                <strong>Conte o que realmente chegou.</strong>Informe a quantidade de cada item. Use
-                zero para itens não entregues.
-              </p>
-            </div>
-            <div className="count-lines">
-              {receipt.lines.map((l) => (
-                <label key={l.id}>
-                  <span>
-                    <strong>{l.name}</strong>
-                    <small>{l.uom}</small>
-                  </span>
-                  <input
-                    aria-label={`Quantidade de ${l.name}`}
-                    name={l.id}
-                    required
-                    type="number"
-                    min="0"
-                    max="999999999"
-                    step="0.0001"
-                    inputMode="decimal"
-                  />
-                </label>
-              ))}
-            </div>
+            <ReceiptCountFields
+              lines={receipt.lines}
+              counts={counts}
+              onChange={setCounts}
+              disabled={busy}
+            />
             {error && (
               <p role="alert" className="error">
                 {error}

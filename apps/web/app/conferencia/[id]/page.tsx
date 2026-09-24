@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation';
 import { serverClient } from '@/lib/supabase-server';
-import { BlindCount } from '@/components/blind-count';
+import { ReceiptConference } from '@/components/blind-count';
 import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 const schema = z.object({
@@ -8,7 +8,16 @@ const schema = z.object({
   supplier: z.string(),
   unit: z.string(),
   status: z.string(),
-  lines: z.array(z.object({ id: z.string().uuid(), name: z.string(), uom: z.string() })),
+  lines: z.array(
+    z.object({
+      id: z.string().uuid(),
+      name: z.string(),
+      uom: z.string(),
+      invoiced: z.number().positive(),
+      sourceQuantity: z.string().optional(),
+      sourceUnit: z.string().optional(),
+    }),
+  ),
 });
 export default async function Conference({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,7 +27,7 @@ export default async function Conference({ params }: { params: Promise<{ id: str
     data: { user },
   } = await client.auth.getUser();
   if (!user) redirect('/login');
-  const { data, error } = await client.rpc('stockai_get_blind_receipt', { p_receipt: id });
+  const { data, error } = await client.rpc('stockai_get_receipt_conference', { p_receipt: id });
   if (error) notFound();
-  return <BlindCount receipt={schema.parse(data)} />;
+  return <ReceiptConference receipt={schema.parse(data)} />;
 }

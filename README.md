@@ -1,6 +1,6 @@
 # Stockai
 
-Gestão de recebimento e estoque para grupos de restaurantes. A primeira etapa implementa o percurso **cadastro manual da nota → conferência cega → revisão de divergência → entrada física e crédito com fornecedor**, com persistência real em Supabase.
+Gestão de recebimento e estoque para grupos de restaurantes. A primeira etapa implementa o percurso **cadastro manual da nota → conferência de quantidades → revisão de divergência → entrada física e crédito com fornecedor**, com persistência real em Supabase.
 
 ## Banco definido para o Stockai
 
@@ -119,3 +119,9 @@ O financeiro usa o total da nota, incluindo frete e tributos. Créditos por dive
 Edições na nota atualizam a conta e sinalizam revisão quando alteram total, fornecedor ou empresa; parcelas e baixas existentes são preservadas. O usuário ajusta as parcelas para o novo total antes de salvar. Todas as edições financeiras têm versão e histórico. Importar uma nota nunca a marca como paga, inclusive notas históricas. A baixa registra o pagamento informado pelo usuário; não há integração bancária.
 
 Testes: `supabase/tests/payables.sql` e `tests/e2e/payables.spec.ts` cobrem parcelas, XML pendente, deduplicação, recebimento manual, despesas sem CNPJ, baixas, histórico, edição e isolamento de acesso.
+
+## Conferência de quantidades
+
+Recebimentos mostra o resumo dos XMLs enviados, quantos já geraram recebimento e quantos permanecem em Identificação. O resumo respeita as empresas e permissões do usuário e separa XMLs sem empresa identificada ao filtrar por unidade.
+
+Gestor e operador veem a quantidade da nota e o campo recebido lado a lado. “Veio certo” preenche um item; “Preencher tudo conforme a nota” preenche todos. O usuário ainda finaliza a conferência, podendo ajustar faltas/excessos antes de salvar. XMLs com conversão mostram a quantidade comercial original e a equivalente na unidade de estoque. A leitura do operador usa `stockai_get_receipt_conference`, sem expor preços ou créditos; o endpoint cego anterior permanece disponível para compatibilidade.

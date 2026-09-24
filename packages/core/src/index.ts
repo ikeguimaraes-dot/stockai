@@ -7,6 +7,8 @@ export type ReceiptLine = {
   counted: number | null;
   priceCents: number;
   fiscalTotalCents?: number;
+  sourceQuantity?: string;
+  sourceUnit?: string;
 };
 export type Receipt = {
   id: string;

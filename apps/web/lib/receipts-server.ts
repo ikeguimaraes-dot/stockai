@@ -1,4 +1,6 @@
 import 'server-only';
+import { z } from 'zod';
+const sourceSchema = z.object({ quantity: z.string(), commercialUnit: z.string() });
 import { getStockBalances } from './stock-server';
 import { serverClient } from './supabase-server';
 import type { Receipt } from '@stockai/core';
@@ -24,6 +26,17 @@ export async function getWorkspace() {
   ]);
   if (result.error || unitResult.error || orgResult.error || membershipResult.error)
     throw new Error('Não foi possível carregar a operação.');
+  const xmlInbox = [];
+  for (let start = 0; ; start += 500) {
+    const inbox = await client
+      .from('stockai_xml_inbox')
+      .select('id,status,unit_id')
+      .order('id')
+      .range(start, start + 499);
+    if (inbox.error) throw new Error('Não foi possível carregar o resumo dos XMLs.');
+    xmlInbox.push(...inbox.data);
+    if (inbox.data.length < 500) break;
+  }
   const receipts: Receipt[] = (result.data ?? []).map((r) => ({
     id: r.id,
     supplier: r.suppliers?.name ?? 'Fornecedor',
@@ -53,10 +66,13 @@ export async function getWorkspace() {
         counted: l.counted_qty,
         priceCents: l.unit_price_cents,
         fiscalTotalCents: l.fiscal_total_cents ?? undefined,
+        sourceQuantity: sourceSchema.safeParse(l.source_data).data?.quantity,
+        sourceUnit: sourceSchema.safeParse(l.source_data).data?.commercialUnit,
       })),
   }));
   return {
     receipts,
+    xmlInbox,
     stockBalances: balanceResult,
     units: unitResult.data ?? [],
     orgs: orgResult.data ?? [],

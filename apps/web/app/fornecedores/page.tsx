@@ -22,6 +22,7 @@ export default async function Suppliers() {
         suppliers,
         orgs: workspace.orgs,
         initialReceipts: workspace.receipts,
+        xmlInbox: workspace.xmlInbox,
         stockBalances: workspace.stockBalances,
         units: workspace.units,
         orgName: workspace.orgs.map((o) => o.name).join(' · '),

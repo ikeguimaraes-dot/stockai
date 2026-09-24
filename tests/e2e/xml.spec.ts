@@ -109,15 +109,32 @@ test('database: durable XML inbox, learned mapping and receipt revisions', async
   const href = await page.getByRole('link', { name: 'Abrir nota e editar' }).getAttribute('href');
   const receiptId = href!.split('/').at(-1);
   await page.goto('/operacao');
+  await page.getByRole('button', { name: 'Recebimentos', exact: true }).click();
+  await expect(page.getByText('3 XMLs enviados', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('1 com recebimento criado · 2 aguardando identificação', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Ver XMLs em Identificação' })).toBeVisible();
+  await page.screenshot({ path: '/tmp/stockai-receipts-xml-summary.png', fullPage: true });
   await page
     .getByRole('button', { name: /Abrir recebimento de/ })
     .first()
     .click();
   const receipt = page.getByRole('dialog');
-  await receipt.getByLabel('Quantidade de Arroz interno').fill('10');
-  await receipt.getByLabel('Quantidade de Leite interno').fill('12');
-  await receipt.getByRole('button', { name: 'Finalizar conferência' }).click();
-  await expect(receipt.getByText('Recebimento registrado')).toBeVisible();
+  await expect(receipt.getByText('Na nota: 2 CX', { exact: true })).toBeVisible();
+  await expect(receipt.getByText('Equivalente no estoque: 12 UN.', { exact: false })).toBeVisible();
+  await page.goto(`/conferencia/${receiptId}`);
+  await expect(page.getByText('Na nota: 2 CX', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Veio certo: Arroz interno', exact: true }).click();
+  await expect(page.getByLabel('Quantidade de Arroz interno')).toHaveValue('10');
+  await page.getByRole('button', { name: 'Preencher tudo conforme a nota' }).click();
+  await expect(page.getByLabel('Quantidade de Leite interno')).toHaveValue('12');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '/tmp/stockai-count-quantities-mobile.png', fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByRole('button', { name: 'Finalizar conferência' }).click();
+  await expect(page.getByText('Conferência registrada.', { exact: true })).toBeVisible();
   await page.goto(href!);
   await page.getByLabel('Quantidade na nota 1', { exact: true }).fill('8');
   await page.getByLabel('Quantidade recebida 1', { exact: true }).fill('7');

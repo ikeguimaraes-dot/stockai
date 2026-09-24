@@ -2,6 +2,7 @@
 import { SupplierDirectory, type SupplierReference } from './supplier-directory';
 import { useRouter } from 'next/navigation';
 import type { StockBalance } from '@/lib/orders';
+import { ReceiptCountFields } from './receipt-count-fields';
 import { OrderNav } from './order-nav';
 import Link from 'next/link';
 import { formatCnpj, type Company } from '@/lib/company';
@@ -82,6 +83,8 @@ const receiptSchema = z.object({
         counted: z.number().nonnegative().finite().nullable(),
         priceCents: z.number().finite().nonnegative(),
         fiscalTotalCents: z.number().int().nonnegative().optional(),
+        sourceQuantity: z.string().optional(),
+        sourceUnit: z.string().optional(),
       }),
     )
     .min(1),
@@ -99,6 +102,7 @@ type LiveWorkspace = {
   suppliers: SupplierReference[];
   orgs: { id: string; name: string }[];
   initialReceipts: Receipt[];
+  xmlInbox: { id: string; status: string; unit_id: string | null }[];
   stockBalances: StockBalance[];
   units: Company[];
   orgName: string;
@@ -166,6 +170,11 @@ export function Stockai({
       `${r.supplier} ${r.invoice} ${r.category}`.toLowerCase().includes(search.toLowerCase()) &&
       (filter === 'all' || r.status === filter),
   );
+  const xmlScope =
+    live?.xmlInbox.filter((x) => unit === 'Todas as empresas' || x.unit_id === unit) ?? [];
+  const xmlPending = xmlScope.filter((x) => x.status === 'pending').length;
+  const unassignedXml =
+    live?.xmlInbox.filter((x) => x.status === 'pending' && !x.unit_id).length ?? 0;
   const pending = scoped.filter((r) => r.status === 'pending_approval');
   const total = scoped.reduce((n, r) => n + receiptTotals(r).fiscal, 0);
   const credits = scoped.reduce((n, r) => n + receiptTotals(r).credit, 0);
@@ -229,7 +238,7 @@ export function Stockai({
     } else setReceipts((old) => [receipt, ...old]);
     setCreate(false);
     setSelected(id);
-    setToast('Recebimento criado. Comece a conferência cega.');
+    setToast('Recebimento criado. Comece a conferência das quantidades.');
   };
   const exportData = () => {
     const rows = [
@@ -555,6 +564,30 @@ export function Stockai({
                   </button>
                 )}
               </div>
+              {live && page === 'receipts' && live.xmlInbox.length > 0 && (
+                <div className="receipt-xml-summary">
+                  <div>
+                    <strong>{xmlScope.length} XMLs enviados</strong>
+                    <p>
+                      {xmlScope.filter((x) => x.status === 'imported').length} com recebimento
+                      criado · {xmlPending} aguardando identificação
+                      {xmlScope.some((x) => x.status === 'duplicate')
+                        ? ` · ${xmlScope.filter((x) => x.status === 'duplicate').length} já cadastrados`
+                        : ''}
+                    </p>
+                    {unit !== 'Todas as empresas' && unassignedXml > 0 && (
+                      <p>Mais {unassignedXml} XML(s) sem empresa identificada.</p>
+                    )}
+                    <small>
+                      XMLs pendentes estão salvos. Eles aparecem em Recebimentos depois de resolver
+                      a identificação.
+                    </small>
+                  </div>
+                  <Link className="secondary" href="/identificacao">
+                    Ver XMLs em Identificação <ArrowRight size={16} />
+                  </Link>
+                </div>
+              )}
               <div className="table-toolbar">
                 <div className="tabs">
                   {[
@@ -774,7 +807,7 @@ export function Stockai({
               setReceipts(z.array(receiptSchema).parse(result.receipts));
               setImportXml(false);
               setSelected(result.createdId);
-              setToast('NF-e importada. Comece a conferência cega.');
+              setToast('NF-e importada. Comece a conferência das quantidades.');
             }}
           />
         </Modal>
@@ -1155,7 +1188,10 @@ function ReceiptDialog({
     }
   };
   return (
-    <Modal title={counting ? 'Conferência cega' : 'Detalhes do recebimento'} onClose={onClose}>
+    <Modal
+      title={counting ? 'Conferência do recebimento' : 'Detalhes do recebimento'}
+      onClose={onClose}
+    >
       <div className="dialog-heading">
         <div className="eyebrow">
           NF {receipt.invoice}
@@ -1181,36 +1217,12 @@ function ReceiptDialog({
               Abrir tela de conferência do operador <ArrowRight size={15} />
             </Link>
           )}
-          <div className="info-banner">
-            <ShieldCheck size={22} />
-            <p>
-              <strong>Conte primeiro. Compare depois.</strong>Informe o que chegou. As quantidades
-              da nota ficam ocultas durante a conferência.
-            </p>
-          </div>
-          <div className="count-lines">
-            {receipt.lines.map((line) => (
-              <label key={line.id}>
-                <span>
-                  <strong>{line.name}</strong>
-                  <small>Quantidade recebida · {line.uom}</small>
-                </span>
-                <div>
-                  <input
-                    aria-label={`Quantidade de ${line.name}`}
-                    type="number"
-                    min="0"
-                    step="0.0001"
-                    required
-                    placeholder="0"
-                    value={counts[line.id] ?? ''}
-                    onChange={(e) => setCounts({ ...counts, [line.id]: e.target.value })}
-                  />
-                  <span>{line.uom}</span>
-                </div>
-              </label>
-            ))}
-          </div>
+          <ReceiptCountFields
+            lines={receipt.lines}
+            counts={counts}
+            onChange={setCounts}
+            disabled={busy}
+          />
           {error && (
             <p role="alert" className="error">
               {error}

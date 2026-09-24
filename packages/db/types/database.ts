@@ -1225,6 +1225,10 @@ export type Database = {
         Returns: undefined
       }
       stockai_get_blind_receipt: { Args: { p_receipt: string }; Returns: Json }
+      stockai_get_receipt_conference: {
+        Args: { p_receipt: string }
+        Returns: Json
+      }
       stockai_identify_xml: {
         Args: {
           p_id: string
