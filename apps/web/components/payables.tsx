@@ -355,11 +355,19 @@ export function Payables({
                     <label className="xml-field">
                       Favorecido (sem CNPJ obrigatório)
                       <input
+                        key={supplier || 'free-creditor'}
                         name="creditor_name"
                         required={!supplier}
                         readOnly={!manual || !!supplier}
-                        maxLength={200}
-                        defaultValue={editing === 'new' ? '' : editing.creditor_name}
+                        maxLength={120}
+                        defaultValue={
+                          supplier
+                            ? (suppliers.find((s) => s.id === supplier)?.name ??
+                              (editing === 'new' ? '' : editing.creditor_name))
+                            : editing === 'new'
+                              ? ''
+                              : editing.creditor_name
+                        }
                       />
                     </label>
                     <label className="xml-field">
