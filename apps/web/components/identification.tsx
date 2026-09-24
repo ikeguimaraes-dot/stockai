@@ -32,6 +32,13 @@ export function Identification({
   const [message, setMessage] = useState('');
   const [filter, setFilter] = useState(initialFilter);
   const [create, setCreate] = useState<null | 'product' | 'category'>(null);
+  const [targetLine, setTargetLine] = useState<string | null>(null);
+  function startCreate(kind: 'product' | 'category', line: string | null = null) {
+    setCreate(kind);
+    setTargetLine(line);
+    setError('');
+    setMessage('');
+  }
   const company = info?.companies.find((c) => c.id === unit);
   const canRemember = !!company && !!info?.editableOrgs.includes(company.org_id);
   async function load(id: string, reset = true) {
@@ -48,6 +55,8 @@ export function Identification({
     return next;
   }
   function selectUnit(unit: string, next = info) {
+    setCreate(null);
+    setTargetLine(null);
     setUnit(unit);
     const org = next?.companies.find((c) => c.id === unit)?.org_id;
     setMapping(
@@ -138,9 +147,27 @@ export function Identification({
     try {
       const result = await saveCatalog(new FormData(e.currentTarget));
       if (result.error) throw new Error(result.error);
-      await load(info!.entry.id, false);
+      const next = await load(info!.entry.id, false);
+      const line = info?.invoice?.lines.find((l) => l.number === targetLine);
+      const created = next.items.find((i) => i.id === result.id && i.org_id === company?.org_id);
+      if (create === 'product' && line && created) {
+        setMapping((current) =>
+          current.map((m) =>
+            m.number === line.number
+              ? {
+                  ...m,
+                  itemId: created.id,
+                  factor: created.base_uom === line.suggestedUom ? line.suggestedFactor : '',
+                }
+              : m,
+          ),
+        );
+        setMessage(
+          'Produto criado e selecionado no item. Confira a conversão e clique em “Vincular e lançar nota” para salvar a associação.',
+        );
+      } else setMessage('Cadastro salvo. Selecione o produto no vínculo.');
       setCreate(null);
-      setMessage('Cadastro salvo. Selecione o produto no vínculo.');
+      setTargetLine(null);
       router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não foi possível salvar.');
@@ -158,6 +185,95 @@ export function Identification({
         ? e.status === 'pending' && !e.unit_id
         : e.status === filter);
   const products = info?.items.filter((i) => i.org_id === company?.org_id && i.is_active) ?? [];
+  const sourceLine = info?.invoice?.lines.find((l) => l.number === targetLine);
+  const catalogForm =
+    create && company && info ? (
+      <form
+        key={`${company.org_id}:${create}:${targetLine ?? 'global'}`}
+        className="catalog-editor inline-product-editor"
+        onSubmit={catalog}
+      >
+        <h3>{create === 'category' ? 'Nova categoria' : 'Novo produto interno'}</h3>
+        {sourceLine && (
+          <p className="muted">
+            Novo cadastro para {sourceLine.code} — {sourceLine.name}. Defina o seu código interno e
+            a unidade em que controla o estoque.
+          </p>
+        )}
+        <input type="hidden" name="kind" value={create} />
+        <input type="hidden" name="orgId" value={company.org_id} />
+        <input type="hidden" name="id" value="" />
+        <label>
+          Nome
+          <input
+            defaultValue={create === 'product' ? (sourceLine?.name.slice(0, 120) ?? '') : ''}
+            name="name"
+            required
+            minLength={create === 'category' ? 2 : 1}
+            maxLength={create === 'category' ? 80 : 120}
+          />
+        </label>
+        {create === 'product' && (
+          <>
+            <label>
+              Código interno
+              <input name="code" required maxLength={60} />
+            </label>
+            <label>
+              Unidade
+              <select
+                name="uom"
+                aria-label="Unidade"
+                defaultValue={sourceLine?.suggestedUom ?? 'UN'}
+              >
+                <option>UN</option>
+                <option>KG</option>
+                <option>L</option>
+              </select>
+            </label>
+            <label>
+              Categoria
+              <select name="categoryId" aria-label="Categoria">
+                <option value="">Sem categoria</option>
+                {info.categories
+                  .filter((c) => c.org_id === company.org_id)
+                  .map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            <label>
+              Compõe CMV?
+              <select name="cmv" aria-label="Compõe CMV?" required defaultValue="">
+                <option value="" disabled>
+                  Selecione
+                </option>
+                <option value="true">Sim</option>
+                <option value="false">Não</option>
+              </select>
+            </label>
+          </>
+        )}
+        <div className="heading-actions">
+          <button className="primary" disabled={busy}>
+            {targetLine && create === 'product' ? 'Salvar e selecionar no item' : 'Salvar cadastro'}
+          </button>
+          <button
+            className="secondary"
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setCreate(null);
+              setTargetLine(null);
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    ) : null;
   return (
     <div className="shell company-directory">
       <aside className="sidebar">
@@ -266,7 +382,7 @@ export function Identification({
                           <button
                             className="secondary"
                             disabled={busy}
-                            onClick={() => setCreate('category')}
+                            onClick={() => startCreate('category')}
                           >
                             <Plus size={16} />
                             Nova categoria
@@ -274,7 +390,7 @@ export function Identification({
                           <button
                             className="secondary"
                             disabled={busy}
-                            onClick={() => setCreate('product')}
+                            onClick={() => startCreate('product')}
                           >
                             <Plus size={16} />
                             Novo produto interno
@@ -285,75 +401,7 @@ export function Identification({
                         Gerenciar produtos e categorias
                       </Link>
                     </div>
-                    {create && company && (
-                      <form className="catalog-editor" onSubmit={catalog}>
-                        <h3>{create === 'category' ? 'Nova categoria' : 'Novo produto interno'}</h3>
-                        <input type="hidden" name="kind" value={create} />
-                        <input type="hidden" name="orgId" value={company.org_id} />
-                        <input type="hidden" name="id" value="" />
-                        <label>
-                          Nome
-                          <input
-                            name="name"
-                            required
-                            minLength={2}
-                            maxLength={create === 'category' ? 80 : 120}
-                          />
-                        </label>
-                        {create === 'product' && (
-                          <>
-                            <label>
-                              Código interno
-                              <input name="code" required maxLength={60} />
-                            </label>
-                            <label>
-                              Unidade
-                              <select name="uom" aria-label="Unidade">
-                                <option>UN</option>
-                                <option>KG</option>
-                                <option>L</option>
-                              </select>
-                            </label>
-                            <label>
-                              Categoria
-                              <select name="categoryId" aria-label="Categoria">
-                                <option value="">Sem categoria</option>
-                                {info.categories
-                                  .filter((c) => c.org_id === company.org_id)
-                                  .map((c) => (
-                                    <option key={c.id} value={c.id}>
-                                      {c.name}
-                                    </option>
-                                  ))}
-                              </select>
-                            </label>
-                            <label>
-                              Compõe CMV?
-                              <select name="cmv" aria-label="Compõe CMV?" required defaultValue="">
-                                <option value="" disabled>
-                                  Selecione
-                                </option>
-                                <option value="true">Sim</option>
-                                <option value="false">Não</option>
-                              </select>
-                            </label>
-                          </>
-                        )}
-                        <div className="heading-actions">
-                          <button className="primary" disabled={busy}>
-                            Salvar cadastro
-                          </button>
-                          <button
-                            className="secondary"
-                            type="button"
-                            disabled={busy}
-                            onClick={() => setCreate(null)}
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      </form>
-                    )}
+                    {!targetLine && catalogForm}
                     {info.suggestions.length > 0 && (
                       <p className="info-banner">
                         Alguns produtos foram sugeridos a partir dos XMLs enviados. Revise o produto
@@ -369,6 +417,19 @@ export function Identification({
                           <p>
                             {l.quantity} {l.commercialUnit} no XML
                           </p>
+                          {canRemember && company && (
+                            <button
+                              type="button"
+                              className="secondary create-product-for-line"
+                              disabled={busy}
+                              aria-label={`Criar produto e código interno para o item ${l.number}`}
+                              onClick={() => startCreate('product', l.number)}
+                            >
+                              <Plus size={16} />
+                              Criar produto e código interno
+                            </button>
+                          )}
+                          {targetLine === l.number && catalogForm}
                           <div className="xml-conversion">
                             <label>
                               Meu produto

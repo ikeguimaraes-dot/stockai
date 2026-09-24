@@ -78,26 +78,46 @@ test('database: durable XML inbox, learned mapping and receipt revisions', async
   await page.getByRole('button', { name: 'Salvar cadastro' }).click();
   await expect(page.getByRole('status')).toContainText('Cadastro salvo');
   for (const product of [
-    { name: 'Arroz interno', code: 'AR-01', unit: 'KG' },
-    { name: 'Leite interno', code: 'LE-01', unit: 'UN' },
+    { number: '1', original: 'Arroz', name: 'Arroz interno', code: 'AR-01', unit: 'KG' },
+    { number: '2', original: 'Leite', name: 'Leite interno', code: 'LE-01', unit: 'UN' },
   ]) {
-    await page.getByRole('button', { name: 'Novo produto interno', exact: true }).click();
+    await page
+      .getByRole('button', {
+        name: `Criar produto e código interno para o item ${product.number}`,
+        exact: true,
+      })
+      .click();
+    await expect(page.getByLabel('Nome', { exact: true })).toHaveValue(product.original);
+    if (product.number === '2') {
+      await page.setViewportSize({ width: 390, height: 844 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+        true,
+      );
+      await page.screenshot({
+        path: '/tmp/stockai-create-product-inline-mobile.png',
+        fullPage: true,
+      });
+      await page.setViewportSize({ width: 1280, height: 900 });
+    }
     await page.getByLabel('Nome', { exact: true }).fill(product.name);
     await page.getByLabel('Código interno', { exact: true }).fill(product.code);
     await page.getByLabel('Unidade', { exact: true }).selectOption(product.unit);
     await page.getByLabel('Categoria', { exact: true }).selectOption({ label: 'Alimentos' });
     await page.getByLabel('Compõe CMV?', { exact: true }).selectOption('true');
-    await page.getByRole('button', { name: 'Salvar cadastro' }).click();
+    await page.getByRole('button', { name: 'Salvar e selecionar no item' }).click();
     await expect(
       page.getByRole('heading', { name: 'Novo produto interno', exact: true }),
     ).toHaveCount(0);
+    await expect(
+      page.getByLabel(`Meu produto do item ${product.number}`).locator('option:checked'),
+    ).toHaveText(`${product.code} — ${product.name} (${product.unit})`);
   }
-  await page
-    .getByLabel('Meu produto do item 1')
-    .selectOption({ label: 'AR-01 — Arroz interno (KG)' });
-  await page
-    .getByLabel('Meu produto do item 2')
-    .selectOption({ label: 'LE-01 — Leite interno (UN)' });
+  await expect(page.getByLabel('Meu produto do item 1').locator('option:checked')).toHaveText(
+    'AR-01 — Arroz interno (KG)',
+  );
+  await expect(page.getByLabel('Conversão do item 1')).toHaveValue('1');
+  await expect(page.getByLabel('Conversão do item 2')).toHaveValue('');
+  await expect(page.getByRole('button', { name: 'Vincular e lançar nota' })).toBeDisabled();
   await page.getByLabel('Conversão do item 2').fill('6');
   await page.screenshot({ path: '/tmp/stockai-identification-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });

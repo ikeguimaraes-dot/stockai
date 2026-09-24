@@ -3569,3 +3569,14 @@ select:focus {
   gap: 10px;
   flex-shrink: 0;
 }
+
+.create-product-for-line {
+  margin: 10px 0 16px;
+}
+.inline-product-editor > p {
+  grid-column: 1/-1;
+  overflow-wrap: anywhere;
+}
+.xml-item .inline-product-editor {
+  margin: 0 0 20px;
+}

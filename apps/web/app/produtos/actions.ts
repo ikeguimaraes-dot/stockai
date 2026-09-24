@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { serverClient } from '@/lib/supabase-server';
 const id = z.union([z.string().uuid(), z.literal('')]);
-export async function saveCatalog(form: FormData): Promise<{ error: string | null }> {
+export async function saveCatalog(form: FormData): Promise<{ error: string | null; id?: string }> {
   const common = z.object({
     kind: z.enum(['category', 'product']),
     orgId: z.string().uuid(),
@@ -56,7 +56,7 @@ export async function saveCatalog(form: FormData): Promise<{ error: string | nul
       };
     revalidatePath('/produtos');
     revalidatePath('/operacao');
-    return { error: null };
+    return { error: null, id: result.data };
   } catch {
     return { error: 'Não foi possível salvar. Tente novamente.' };
   }
