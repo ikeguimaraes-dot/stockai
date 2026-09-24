@@ -284,4 +284,25 @@ test('database: durable XML inbox, learned mapping and receipt revisions', async
   await page.getByRole('button', { name: 'Tema claro', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.screenshot({ path: '/tmp/stockai-similar-products-dark.png', fullPage: true });
+  await page.getByRole('link', { name: 'Arroz interno', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Produtos vinculados (1)' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Arroz', exact: true })).toBeVisible();
+  await page.getByLabel('Nosso nome do produto').fill('Arroz da casa');
+  await page.getByRole('button', { name: 'Salvar nome', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Arroz da casa', exact: true })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Arroz', exact: true })).toBeVisible();
+  await page.getByRole('link', { name: '← Produtos' }).click();
+  await page.getByRole('link', { name: 'Arroz interno 2', exact: true }).click();
+  const supplierOption = page
+    .getByLabel('Produto do fornecedor')
+    .locator('option')
+    .filter({ hasText: '· A1 ·' });
+  await page
+    .getByLabel('Produto do fornecedor')
+    .selectOption((await supplierOption.getAttribute('value')) || '');
+  await page.getByRole('button', { name: 'Vincular a AR-SIMILAR', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Produtos vinculados (1)' })).toBeVisible();
+  await page.screenshot({ path: '/tmp/stockai-product-profile.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

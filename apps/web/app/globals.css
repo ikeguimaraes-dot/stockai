@@ -3776,3 +3776,57 @@ html[data-theme='light'] .secondary {
     transform 180ms ease,
     box-shadow 180ms ease;
 }
+.product-profile {
+  max-width: 1120px;
+  margin: auto;
+  padding: 32px 24px 80px;
+}
+.product-profile header {
+  margin: 28px 0;
+}
+.product-profile h1 {
+  font-size: 32px;
+}
+.product-profile p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+.profile-panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 20px;
+  padding: 24px;
+  margin: 20px 0;
+}
+.profile-panel label {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0;
+}
+.profile-panel input,
+.profile-panel select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+}
+.profile-table {
+  overflow: auto;
+}
+.profile-table table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.profile-table th,
+.profile-table td {
+  padding: 14px 10px;
+  border-bottom: 1px solid var(--line);
+}
+.profile-table small {
+  display: block;
+  color: var(--muted);
+  margin-top: 5px;
+}

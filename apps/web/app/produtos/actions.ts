@@ -90,3 +90,61 @@ export async function saveCatalog(form: FormData): Promise<{ error: string | nul
     return { error: 'Não foi possível salvar. Tente novamente.' };
   }
 }
+
+export async function saveProductName(itemId: string, name: string, expected: string) {
+  if (!z.string().uuid().safeParse(itemId).success || !name.trim() || name.trim().length > 120)
+    return { error: 'Informe um nome de até 120 caracteres.' };
+  const c = await serverClient();
+  const { error } = await c.rpc('stockai_rename_product', {
+    p_item: itemId,
+    p_name: name.trim(),
+    p_expected: expected,
+  });
+  if (error)
+    return {
+      error:
+        error.code === '23505'
+          ? 'Já existe um produto com este nome e unidade no grupo.'
+          : ['42501', '40001', '22023'].includes(error.code)
+            ? error.message
+            : 'Não foi possível salvar o nome.',
+    };
+  revalidatePath('/produtos', 'layout');
+  revalidatePath('/operacao');
+  revalidatePath('/notas/[id]', 'page');
+  return { error: null };
+}
+export async function relinkProduct(
+  linkId: string,
+  target: string,
+  factor: number,
+  expected: string,
+) {
+  if (
+    !z
+      .object({
+        linkId: z.string().uuid(),
+        target: z.string().uuid(),
+        factor: z.number().positive().finite(),
+        expected: z.string().datetime({ offset: true }),
+      })
+      .safeParse({ linkId, target, factor, expected }).success
+  )
+    return { error: 'Confira o produto e a conversão.' };
+  const c = await serverClient();
+  const { error } = await c.rpc('stockai_relink_product', {
+    p_link: linkId,
+    p_target: target,
+    p_factor: factor,
+    p_expected: expected,
+  });
+  if (error)
+    return {
+      error: ['42501', '40001', '22023'].includes(error.code)
+        ? error.message
+        : 'Não foi possível salvar o vínculo.',
+    };
+  revalidatePath('/produtos', 'layout');
+  revalidatePath('/identificacao');
+  return { error: null };
+}

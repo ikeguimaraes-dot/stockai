@@ -427,7 +427,9 @@ export function ProductDirectory({
                       .map((i) => (
                         <tr key={i.id}>
                           <td>
-                            <strong>{i.name}</strong>
+                            <Link href={`/produtos/${i.id}`}>
+                              <strong>{i.name}</strong>
+                            </Link>
                           </td>
                           <td>
                             <ProductCode itemId={i.id} code={i.internal_code} editable={allowed} />
@@ -460,7 +462,9 @@ export function ProductDirectory({
                   <div className="catalog-icon">
                     <Package size={22} />
                   </div>
-                  <h2>{i.name}</h2>
+                  <h2>
+                    <Link href={`/produtos/${i.id}`}>{i.name}</Link>
+                  </h2>
                   <span>
                     {i.internal_code} · {i.base_uom} ·{' '}
                     {categories.find((c) => c.id === i.category_id)?.name ?? 'Sem categoria'}

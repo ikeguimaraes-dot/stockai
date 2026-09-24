@@ -1284,6 +1284,19 @@ export type Database = {
         }
         Returns: string
       }
+      stockai_relink_product: {
+        Args: {
+          p_expected: string
+          p_factor: number
+          p_link: string
+          p_target: string
+        }
+        Returns: undefined
+      }
+      stockai_rename_product: {
+        Args: { p_expected: string; p_item: string; p_name: string }
+        Returns: undefined
+      }
       stockai_return_invoices: {
         Args: never
         Returns: {

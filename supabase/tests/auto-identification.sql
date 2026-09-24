@@ -76,12 +76,33 @@ do $$ begin
  begin perform public.stockai_update_internal_code(current_setting('test.rice')::uuid,'AUTO-0001','RICE-NEW');raise exception 'Duplicate code accepted';exception when unique_violation then null;end;
  begin perform public.stockai_update_internal_code(current_setting('test.rice')::uuid,'STALE','AR-01');raise exception 'Stale edit accepted';exception when serialization_failure then null;end;
 end $$;
+-- Product profiles preserve historic lines and source names.
+select public.stockai_rename_product(current_setting('test.rice')::uuid,'Nosso arroz','Arroz');
+select set_config('test.target',public.stockai_save_product_code(current_setting('test.org')::uuid,'Arroz destino','KG','DEST',null,true)::text,true);
+select set_config('test.link',(select id::text from public.stockai_product_links where org_id=current_setting('test.org')::uuid and supplier_code='A&1'),true);
+select set_config('test.linktime',(select updated_at::text from public.stockai_product_links where id=current_setting('test.link')::uuid),true);
+select public.stockai_relink_product(current_setting('test.link')::uuid,current_setting('test.target')::uuid,2,current_setting('test.linktime')::timestamptz);
+do $$ begin
+ if not exists(select 1 from public.stockai_receipt_lines where item_id=current_setting('test.rice')::uuid and source_data->>'name'='Arroz') then raise exception 'History changed';end if;
+ if not exists(select 1 from public.stockai_product_links where id=current_setting('test.link')::uuid and item_id=current_setting('test.target')::uuid and factor=2) then raise exception 'Mapping not saved';end if;
+ begin perform public.stockai_rename_product(current_setting('test.rice')::uuid,'Lost update','Arroz');raise exception 'Stale rename accepted';exception when serialization_failure then null;end;
+ begin perform public.stockai_relink_product(current_setting('test.link')::uuid,current_setting('test.rice')::uuid,1,current_setting('test.linktime')::timestamptz);raise exception 'Stale mapping accepted';exception when serialization_failure then null;end;
+ begin perform public.stockai_relink_product(current_setting('test.link')::uuid,current_setting('test.rice')::uuid,0,(select updated_at from public.stockai_product_links where id=current_setting('test.link')::uuid));raise exception 'Zero factor accepted';exception when invalid_parameter_value then null;end;
+end $$;
+select set_config('test.thirdxml',replace(replace(current_setting('test.xml'),'35260911222333000181550010000001231123456783','35260911222333000181550010000001251123456788'),'<nNF>123</nNF>','<nNF>125</nNF>'),true);
+select set_config('test.third',public.stockai_queue_xml('third.xml',current_setting('test.thirdxml'),gen_random_uuid())::text,true);
+select set_config('test.thirdresult',public.stockai_auto_identify_xml(current_setting('test.third')::uuid,current_setting('test.company')::uuid)::text,true);
+do $$ begin
+ if not exists(select 1 from public.stockai_receipt_lines where receipt_id=(current_setting('test.thirdresult')::jsonb->>'receipt_id')::uuid and source_item_number=1 and item_id=current_setting('test.target')::uuid and invoiced_qty=20) then raise exception 'Next invoice ignored new mapping';end if;
+end $$;
 -- Neither a different tenant nor an operator may create products through this endpoint.
 reset role;
 insert into public.stockai_memberships(org_id,unit_id,user_id,role) values(current_setting('test.org')::uuid,current_setting('test.company')::uuid,'42222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa','operator');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','42222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
 do $$ begin
+ begin perform public.stockai_rename_product(current_setting('test.rice')::uuid,'Unauthorized','Nosso arroz');raise exception 'Operator renamed';exception when insufficient_privilege then null;end;
+ begin perform public.stockai_relink_product(current_setting('test.link')::uuid,current_setting('test.rice')::uuid,1,now());raise exception 'Operator relinked';exception when insufficient_privilege then null;end;
  begin perform public.stockai_update_internal_code(current_setting('test.rice')::uuid,'UNAUTHORIZED','RICE-NEW');raise exception 'Operator edited code';exception when insufficient_privilege then null;end;
  if exists(select 1 from public.stockai_return_invoices()) then raise exception 'Operator accessed return inbox';end if;
  begin perform public.stockai_auto_identify_xml(current_setting('test.inbox')::uuid,current_setting('test.company')::uuid);raise exception 'Operator accessed manager XML';exception when insufficient_privilege then null;end;
