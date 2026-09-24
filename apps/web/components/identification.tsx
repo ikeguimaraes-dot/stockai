@@ -14,8 +14,15 @@ type Entry = {
   message: string;
   created_at: string;
   receipt_id: string | null;
+  unit_id: string | null;
 };
-export function Identification({ entries }: { entries: Entry[] }) {
+export function Identification({
+  entries,
+  initialFilter = 'pending',
+}: {
+  entries: Entry[];
+  initialFilter?: string;
+}) {
   const router = useRouter();
   const [info, setInfo] = useState<Info | null>(null);
   const [unit, setUnit] = useState('');
@@ -23,7 +30,7 @@ export function Identification({ entries }: { entries: Entry[] }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [filter, setFilter] = useState('pending');
+  const [filter, setFilter] = useState(initialFilter);
   const [create, setCreate] = useState<null | 'product' | 'category'>(null);
   const company = info?.companies.find((c) => c.id === unit);
   const canRemember = !!company && !!info?.editableOrgs.includes(company.org_id);
@@ -141,6 +148,15 @@ export function Identification({ entries }: { entries: Entry[] }) {
       setBusy(false);
     }
   }
+  const pendingProducts = entries.filter((e) => e.status === 'pending' && e.unit_id);
+  const pendingIssues = entries.filter((e) => e.status === 'pending' && !e.unit_id);
+  const matches = (e: Entry) =>
+    filter === 'all' ||
+    (filter === 'products'
+      ? e.status === 'pending' && !!e.unit_id
+      : filter === 'issues'
+        ? e.status === 'pending' && !e.unit_id
+        : e.status === filter);
   const products = info?.items.filter((i) => i.org_id === company?.org_id && i.is_active) ?? [];
   return (
     <div className="shell company-directory">
@@ -434,11 +450,39 @@ export function Identification({ entries }: { entries: Entry[] }) {
             </section>
           ) : (
             <>
+              <section className="panel identification-guide">
+                <h2>{pendingProducts.length} notas para vincular produtos</h2>
+                <p>
+                  As notas que ainda não aparecem em Recebimentos estão nesta lista. Clique em uma
+                  nota, escolha seu produto em “Meu produto”, confira a conversão e clique em
+                  “Vincular e lançar nota”.
+                </p>
+                <div>
+                  <button
+                    className={filter === 'products' ? 'primary' : 'secondary'}
+                    onClick={() => setFilter('products')}
+                  >
+                    Revisar produtos ({pendingProducts.length})
+                  </button>
+                  <button
+                    className={filter === 'issues' ? 'primary' : 'secondary'}
+                    onClick={() => setFilter('issues')}
+                  >
+                    XMLs com erro ou sem empresa ({pendingIssues.length})
+                  </button>
+                </div>
+              </section>
               <div className="catalog-filters">
                 <label>
                   Situação
-                  <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-                    <option value="pending">Aguardando identificação</option>
+                  <select
+                    aria-label="Situação dos XMLs"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                  >
+                    <option value="pending">Todas as pendências</option>
+                    <option value="products">Vincular produtos / conversões</option>
+                    <option value="issues">Erro no XML / empresa não identificada</option>
                     <option value="all">Todos os arquivos</option>
                     <option value="imported">Importados</option>
                     <option value="duplicate">Duplicados</option>
@@ -446,22 +490,20 @@ export function Identification({ entries }: { entries: Entry[] }) {
                 </label>
               </div>
               <div className="order-list">
-                {entries
-                  .filter((e) => filter === 'all' || e.status === filter)
-                  .map((e) => (
-                    <button
-                      key={e.id}
-                      disabled={busy}
-                      className="panel order-card"
-                      onClick={() => void open(e.id)}
-                    >
-                      <h2>{e.filename}</h2>
-                      <p>{e.message}</p>
-                      <small>{new Date(e.created_at).toLocaleString('pt-BR')}</small>
-                    </button>
-                  ))}
+                {entries.filter(matches).map((e) => (
+                  <button
+                    key={e.id}
+                    disabled={busy}
+                    className="panel order-card"
+                    onClick={() => void open(e.id)}
+                  >
+                    <h2>{e.filename}</h2>
+                    <p>{e.message}</p>
+                    <small>{new Date(e.created_at).toLocaleString('pt-BR')}</small>
+                  </button>
+                ))}
               </div>
-              {!entries.some((e) => filter === 'all' || e.status === filter) && (
+              {!entries.some(matches) && (
                 <div className="catalog-empty">Nenhum arquivo nesta situação.</div>
               )}
             </>

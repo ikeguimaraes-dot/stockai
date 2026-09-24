@@ -583,9 +583,17 @@ export function Stockai({
                       a identificação.
                     </small>
                   </div>
-                  <Link className="secondary" href="/identificacao">
-                    Ver XMLs em Identificação <ArrowRight size={16} />
-                  </Link>
+                  <div className="receipt-review-links">
+                    {xmlScope.some((x) => x.status === 'pending' && x.unit_id) && (
+                      <Link className="primary" href="/identificacao?situacao=products">
+                        Revisar {xmlScope.filter((x) => x.status === 'pending' && x.unit_id).length}{' '}
+                        notas pendentes <ArrowRight size={16} />
+                      </Link>
+                    )}
+                    <Link className="secondary" href="/identificacao">
+                      Ver XMLs em Identificação <ArrowRight size={16} />
+                    </Link>
+                  </div>
                 </div>
               )}
               <div className="table-toolbar">

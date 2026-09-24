@@ -2,7 +2,17 @@ import { redirect } from 'next/navigation';
 import { serverClient } from '@/lib/supabase-server';
 import { Identification } from '@/components/identification';
 export const dynamic = 'force-dynamic';
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams: Promise<{ situacao?: string }>;
+}) {
+  const { situacao } = await searchParams;
+  const initialFilter = ['products', 'issues', 'all', 'imported', 'duplicate'].includes(
+    situacao ?? '',
+  )
+    ? situacao!
+    : 'pending';
   const c = await serverClient();
   const {
     data: { user },
@@ -12,7 +22,7 @@ export default async function Page() {
   for (let start = 0; ; start += 500) {
     const r = await c
       .from('stockai_xml_inbox')
-      .select('id,filename,status,message,created_at,receipt_id')
+      .select('id,filename,status,message,created_at,receipt_id,unit_id')
       .order('created_at', { ascending: false })
       .order('id')
       .range(start, start + 499);
@@ -20,5 +30,5 @@ export default async function Page() {
     rows.push(...r.data);
     if (r.data.length < 500) break;
   }
-  return <Identification entries={rows} />;
+  return <Identification key={initialFilter} entries={rows} initialFilter={initialFilter} />;
 }
