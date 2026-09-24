@@ -45,10 +45,15 @@ export function Identification({ entries }: { entries: Entry[] }) {
     const org = next?.companies.find((c) => c.id === unit)?.org_id;
     setMapping(
       next?.invoice?.lines.map((l) => {
-        const link = next.links.find(
+        const saved = next.links.find(
           (v) =>
             v.org_id === org && v.supplier_code === l.code && v.source_unit === l.commercialUnit,
         );
+        const candidates = next.suggestions.filter(
+          (v) =>
+            v.org_id === org && v.supplier_code === l.code && v.source_unit === l.commercialUnit,
+        );
+        const link = saved ?? (candidates.length === 1 ? candidates[0] : undefined);
         return {
           number: l.number,
           itemId: link?.item_id ?? '',
@@ -332,6 +337,12 @@ export function Identification({ entries }: { entries: Entry[] }) {
                           </button>
                         </div>
                       </form>
+                    )}
+                    {info.suggestions.length > 0 && (
+                      <p className="info-banner">
+                        Alguns produtos foram sugeridos a partir dos XMLs enviados. Revise o produto
+                        e a conversão antes de confirmar os vínculos.
+                      </p>
                     )}
                     <div className="xml-items">
                       {info.invoice.lines.map((l, i) => (

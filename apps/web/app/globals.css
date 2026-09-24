@@ -3228,3 +3228,54 @@ select:focus {
     grid-template-columns: 1fr;
   }
 }
+
+.supplier-directory .company-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.supplier-review-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.supplier-base-note {
+  margin-bottom: 24px;
+  line-height: 1.7;
+}
+.supplier-card details {
+  margin: 16px 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.supplier-card details summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+.supplier-card details ul {
+  padding-left: 18px;
+}
+.supplier-card .supplier-review-note {
+  padding: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.supplier-card .supplier-aliases {
+  font-size: 12px;
+  line-height: 1.7;
+}
+.supplier-card > small {
+  display: block;
+  margin: 16px 0;
+  font-size: 11px;
+}
+.supplier-card h2,
+.supplier-card p {
+  overflow-wrap: anywhere;
+}

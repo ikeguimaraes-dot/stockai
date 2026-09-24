@@ -1,4 +1,5 @@
 'use client';
+import { SupplierDirectory, type SupplierReference } from './supplier-directory';
 import { useRouter } from 'next/navigation';
 import type { StockBalance } from '@/lib/orders';
 import { OrderNav } from './order-nav';
@@ -95,6 +96,8 @@ function Badge({ status }: { status: Receipt['status'] }) {
 }
 
 type LiveWorkspace = {
+  suppliers: SupplierReference[];
+  orgs: { id: string; name: string }[];
   initialReceipts: Receipt[];
   stockBalances: StockBalance[];
   units: Company[];
@@ -601,7 +604,20 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
               )}
             />
           )}
-          {page === 'suppliers' && (
+          {page === 'suppliers' && live && (
+            <SupplierDirectory
+              suppliers={live.suppliers}
+              receipts={receipts}
+              units={live.units}
+              orgs={live.orgs}
+              unit={unit}
+              onReceipts={(name) => {
+                navigate('receipts');
+                setSearch(name);
+              }}
+            />
+          )}
+          {page === 'suppliers' && !live && (
             <div className="supplier-grid">
               {Array.from(new Set(scoped.map((r) => r.supplier))).map((name) => {
                 const list = scoped.filter((r) => r.supplier === name);
@@ -759,6 +775,7 @@ export function Stockai({ live }: { live?: LiveWorkspace }) {
       )}
       {create && (
         <NewReceipt
+          suppliers={live?.suppliers}
           units={live?.units.filter((u) => u.tax_id && u.legal_name)}
           onClose={() => setCreate(false)}
           onCreate={createReceipt}
@@ -1318,6 +1335,7 @@ function ReceiptDialog({
   );
 }
 function NewReceipt({
+  suppliers = [],
   onClose,
   onCreate,
   units = [
@@ -1328,6 +1346,7 @@ function NewReceipt({
   onClose: () => void;
   onCreate: (r: Receipt) => Promise<void>;
   units?: Company[];
+  suppliers?: SupplierReference[];
 }) {
   const [lines, setLines] = useState([
     { id: crypto.randomUUID(), name: '', uom: 'KG' as 'KG' | 'L' | 'UN', invoiced: '', price: '' },
@@ -1335,6 +1354,7 @@ function NewReceipt({
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [requestId] = useState(() => crypto.randomUUID());
+  const [selectedUnit, setSelectedUnit] = useState('');
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setBusy(true);
@@ -1388,7 +1408,12 @@ function NewReceipt({
         <div className="form-grid">
           <label className="company-field">
             Empresa destinatária
-            <select name="unit" required defaultValue="">
+            <select
+              name="unit"
+              required
+              value={selectedUnit}
+              onChange={(e) => setSelectedUnit(e.target.value)}
+            >
               <option value="" disabled>
                 Selecione a empresa da nota
               </option>
@@ -1402,7 +1427,22 @@ function NewReceipt({
           </label>
           <label>
             Fornecedor
-            <input name="supplier" required placeholder="Nome do fornecedor" maxLength={100} />
+            <input
+              name="supplier"
+              list="registered-suppliers"
+              required
+              placeholder="Nome do fornecedor"
+              maxLength={100}
+            />
+            <datalist id="registered-suppliers">
+              {suppliers
+                .filter((s) => s.org_id === units.find((u) => u.id === selectedUnit)?.org_id)
+                .map((s) => (
+                  <option key={s.id} value={s.name}>
+                    {s.aliases.join(', ')}
+                  </option>
+                ))}
+            </datalist>
           </label>
           <label>
             Número da nota

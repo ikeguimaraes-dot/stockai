@@ -61,6 +61,7 @@ export type Database = {
           is_active: boolean
           name: string
           org_id: string
+          source_references: Json
         }
         Insert: {
           base_uom: string
@@ -72,6 +73,7 @@ export type Database = {
           is_active?: boolean
           name: string
           org_id: string
+          source_references?: Json
         }
         Update: {
           base_uom?: string
@@ -83,6 +85,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           org_id?: string
+          source_references?: Json
         }
         Relationships: [
           {
@@ -818,24 +821,39 @@ export type Database = {
       }
       stockai_suppliers: {
         Row: {
+          aliases: string[]
           created_at: string
           id: string
           name: string
           org_id: string
+          reference_labels: string[]
+          review_note: string | null
+          source_name: string | null
+          source_references: Json
           tax_id: string | null
         }
         Insert: {
+          aliases?: string[]
           created_at?: string
           id?: string
           name: string
           org_id: string
+          reference_labels?: string[]
+          review_note?: string | null
+          source_name?: string | null
+          source_references?: Json
           tax_id?: string | null
         }
         Update: {
+          aliases?: string[]
           created_at?: string
           id?: string
           name?: string
           org_id?: string
+          reference_labels?: string[]
+          review_note?: string | null
+          source_name?: string | null
+          source_references?: Json
           tax_id?: string | null
         }
         Relationships: [

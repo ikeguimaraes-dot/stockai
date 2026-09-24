@@ -51,6 +51,7 @@ Sem Supabase, `/demo` funciona com exemplos persistidos no navegador. `/operacao
 - Movimentações e auditoria imutáveis. Não há edição destrutiva de estoque pela aplicação.
 - Rota `/conferencia/[id]` autenticada retorna apenas identificação dos itens e unidade de medida. Operadores não recebem preços nem quantidades esperadas no payload.
 - Painel, filtros, busca, fornecedores, fila de aprovação, CSV e entradas confirmadas, responsivos.
+- Fornecedores cadastrados aparecem mesmo sem recebimentos, com busca por nomes anteriores, referências e CNPJ. Bases importadas preservam origem e linhas da planilha; cadastros ambíguos podem ser filtrados para revisão. O formulário de recebimento sugere fornecedores do grupo da empresa selecionada. Produtos preparados a partir de XMLs podem sugerir vínculos em Identificação; o usuário confirma as conversões antes de salvar a relação reutilizável.
 - Testes de domínio, integração SQL, navegador e CI.
 
 ## Limites desta etapa

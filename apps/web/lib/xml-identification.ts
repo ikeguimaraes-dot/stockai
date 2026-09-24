@@ -1,4 +1,17 @@
 import 'server-only';
+import { z } from 'zod';
+const sourceLinks = z.object({
+  links: z
+    .array(
+      z.object({
+        supplier_tax_id: z.string(),
+        supplier_code: z.string(),
+        source_unit: z.string(),
+        factor: z.number().positive(),
+      }),
+    )
+    .default([]),
+});
 import { parseNfe, mapNfeLines, type NfeMapping } from '@stockai/core/nfe';
 import { serverClient } from './supabase-server';
 import { getCatalog } from './catalog';
@@ -23,6 +36,7 @@ export async function inspectXml(id: string) {
       items: [],
       categories: [],
       links: [],
+      suggestions: [],
       editableOrgs: [] as string[],
     };
   }
@@ -61,6 +75,16 @@ export async function inspectXml(id: string) {
     items: catalog.items.filter((i) => orgs.has(i.org_id)),
     categories: catalog.categories.filter((i) => orgs.has(i.org_id)),
     links: linksResult.data,
+    suggestions: catalog.items
+      .filter((i) => orgs.has(i.org_id) && i.is_active)
+      .flatMap((i) => {
+        const parsed = sourceLinks.safeParse(i.source_references);
+        return parsed.success
+          ? parsed.data.links
+              .filter((l) => l.supplier_tax_id === invoice.supplierTaxId)
+              .map((l) => ({ ...l, item_id: i.id, org_id: i.org_id }))
+          : [];
+      }),
     editableOrgs: valid
       .filter(
         (m) =>
