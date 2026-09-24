@@ -1,6 +1,11 @@
 import 'server-only';
 import { z } from 'zod';
-const sourceSchema = z.object({ quantity: z.string(), commercialUnit: z.string() });
+const sourceSchema = z.object({
+  quantity: z.string(),
+  commercialUnit: z.string(),
+  code: z.string().optional(),
+  name: z.string().optional(),
+});
 import { getStockBalances } from './stock-server';
 import { serverClient } from './supabase-server';
 import type { Receipt } from '@stockai/core';
@@ -16,7 +21,7 @@ export async function getWorkspace() {
       client
         .from('stockai_receipts')
         .select(
-          '*,suppliers:stockai_suppliers(name),units:stockai_units(name,legal_name,tax_id),receipt_lines:stockai_receipt_lines(*,items:stockai_items(name,base_uom))',
+          '*,suppliers:stockai_suppliers(name),units:stockai_units(name,legal_name,tax_id),receipt_lines:stockai_receipt_lines(*,items:stockai_items(name,base_uom,internal_code))',
         )
         .order('reference_date', { ascending: false })
         .order('id')
@@ -36,7 +41,7 @@ export async function getWorkspace() {
     allReceipts(),
     client.from('stockai_units').select('id,name,org_id,legal_name,tax_id'),
     client.from('stockai_orgs').select('id,name'),
-    client.from('stockai_memberships').select('org_id,unit_id,role'),
+    client.from('stockai_memberships').select('org_id,unit_id,role,revoked_at,expires_at'),
     getStockBalances(),
   ]);
   if (result.error || unitResult.error || orgResult.error || membershipResult.error)
@@ -76,6 +81,18 @@ export async function getWorkspace() {
       .filter((l) => l.is_active)
       .map((l) => ({
         id: l.id,
+        itemId: l.item_id,
+        internalCode: l.items?.internal_code,
+        canEditCode: (membershipResult.data ?? []).some(
+          (m) =>
+            m.org_id === r.org_id &&
+            !m.unit_id &&
+            !m.revoked_at &&
+            (!m.expires_at || Date.parse(m.expires_at) > Date.now()) &&
+            ['owner', 'manager', 'implementer'].includes(m.role),
+        ),
+        supplierProductCode: sourceSchema.safeParse(l.source_data).data?.code,
+        supplierProductName: sourceSchema.safeParse(l.source_data).data?.name,
         name: l.items?.name ?? 'Insumo',
         uom: l.items?.base_uom as 'KG' | 'L' | 'UN',
         invoiced: l.invoiced_qty,

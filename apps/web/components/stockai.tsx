@@ -1,4 +1,5 @@
 'use client';
+import { ProductCode } from './product-code';
 import { SupplierDirectory, type SupplierReference } from './supplier-directory';
 import { useRouter } from 'next/navigation';
 import type { StockBalance } from '@/lib/orders';
@@ -86,6 +87,11 @@ const receiptSchema = z.object({
         fiscalTotalCents: z.number().int().nonnegative().optional(),
         sourceQuantity: z.string().optional(),
         sourceUnit: z.string().optional(),
+        itemId: z.string().optional(),
+        internalCode: z.string().optional(),
+        canEditCode: z.boolean().optional(),
+        supplierProductCode: z.string().optional(),
+        supplierProductName: z.string().optional(),
       }),
     )
     .min(1),
@@ -131,6 +137,19 @@ export function Stockai({
   const [mobile, setMobile] = useState(false);
   const [toast, setToast] = useState('');
   const [period, setPeriod] = useState('week');
+  useEffect(() => {
+    const changed = (event: Event) => {
+      const d = (event as CustomEvent<{ itemId: string; code: string }>).detail;
+      setReceipts((current) =>
+        current.map((r) => ({
+          ...r,
+          lines: r.lines.map((l) => (l.itemId === d.itemId ? { ...l, internalCode: d.code } : l)),
+        })),
+      );
+    };
+    window.addEventListener('stockai-product-code', changed);
+    return () => window.removeEventListener('stockai-product-code', changed);
+  }, []);
   useEffect(() => {
     if (live) {
       setReady(true);
@@ -1239,6 +1258,9 @@ function ReceiptDialog({
           </p>
         )}
         <Badge status={receipt.status} />
+        {receipt.lines.some((l) => l.canEditCode) && (
+          <p>Alterar o código interno atualiza o cadastro do produto em todas as notas do grupo.</p>
+        )}
         {operatorHref && (
           <Link className="text-button" href={`/notas/${receipt.id}`}>
             Editar nota e ver histórico <ArrowRight size={15} />
@@ -1326,6 +1348,14 @@ function ReceiptDialog({
                   <tr key={line.id}>
                     <td>
                       <strong>{line.name}</strong>
+                      <ProductCode
+                        itemId={line.itemId}
+                        code={line.internalCode}
+                        editable={line.canEditCode}
+                      />
+                      {line.supplierProductCode && (
+                        <small>Código do fornecedor: {line.supplierProductCode}</small>
+                      )}
                       <small>{line.uom}</small>
                     </td>
                     <td>{qty(line.invoiced)}</td>

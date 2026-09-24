@@ -1,5 +1,6 @@
 'use client';
 import { Check } from 'lucide-react';
+import { ProductCode } from './product-code';
 export type CountLine = {
   id: string;
   name: string;
@@ -7,6 +8,11 @@ export type CountLine = {
   invoiced: number;
   sourceQuantity?: string;
   sourceUnit?: string;
+  itemId?: string;
+  internalCode?: string;
+  canEditCode?: boolean;
+  supplierProductCode?: string;
+  supplierProductName?: string;
 };
 const qty = (n: number) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 4 }).format(n);
 export function ReceiptCountFields({
@@ -49,6 +55,13 @@ export function ReceiptCountFields({
             <div className="receipt-count-row" key={l.id}>
               <div className="receipt-count-product">
                 <strong>{l.name}</strong>
+                <ProductCode itemId={l.itemId} code={l.internalCode} editable={l.canEditCode} />
+                {l.supplierProductCode && (
+                  <small>Código do fornecedor: {l.supplierProductCode}</small>
+                )}
+                {l.supplierProductName && l.supplierProductName !== l.name && (
+                  <small>No XML: {l.supplierProductName}</small>
+                )}
                 <span>
                   Na nota:{' '}
                   <b>

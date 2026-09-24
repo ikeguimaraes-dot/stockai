@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, Download } from 'lucide-react';
 import { editNote } from '@/app/notas/[id]/actions';
+import { ProductCode } from './product-code';
 import type { Database, Json } from '../../../packages/db/types/database';
 type Tables = Database['public']['Tables'];
 type Note = Tables['stockai_receipts']['Row'] & {
@@ -46,12 +47,14 @@ export function NoteEditor({
   items,
   history,
   hasXml,
+  canEditProductCodes,
 }: {
   note: Note;
   units: { id: string; name: string }[];
   items: Item[];
   history: Tables['stockai_receipt_revisions']['Row'][];
   hasXml: boolean;
+  canEditProductCodes: boolean;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
@@ -231,6 +234,11 @@ export function NoteEditor({
                         ))}
                     </select>
                   </label>
+                  <ProductCode
+                    itemId={l.item_id}
+                    code={items.find((i) => i.id === l.item_id)?.internal_code}
+                    editable={canEditProductCodes}
+                  />
                   <label className="xml-field">
                     Quantidade na nota
                     <input

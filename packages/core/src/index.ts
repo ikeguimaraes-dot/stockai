@@ -1,4 +1,5 @@
 export type ReceiptStatus = 'counting' | 'pending_approval' | 'closed';
+export { similarProducts } from './product-similarity';
 export type ReceiptLine = {
   id: string;
   name: string;
@@ -9,6 +10,11 @@ export type ReceiptLine = {
   fiscalTotalCents?: number;
   sourceQuantity?: string;
   sourceUnit?: string;
+  itemId?: string;
+  internalCode?: string;
+  canEditCode?: boolean;
+  supplierProductCode?: string;
+  supplierProductName?: string;
 };
 export type Receipt = {
   id: string;

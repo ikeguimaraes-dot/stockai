@@ -142,6 +142,12 @@ test('database: durable XML inbox, learned mapping and receipt revisions', async
     .click();
   const receipt = page.getByRole('dialog');
   await expect(receipt.getByText('Na nota: 2 CX', { exact: true })).toBeVisible();
+  const riceCode = receipt.locator('.receipt-count-row').filter({ hasText: 'Arroz interno' });
+  await expect(riceCode.getByLabel('Código interno do produto')).toHaveValue('AR-01');
+  await riceCode.getByLabel('Código interno do produto').fill('AR-02');
+  await riceCode.getByRole('button', { name: 'Salvar código' }).click();
+  await expect(riceCode.getByRole('status')).toHaveText('Código salvo.');
+  await page.screenshot({ path: '/tmp/stockai-note-code-editor.png', fullPage: true });
   await expect(receipt.getByText('Equivalente no estoque: 12 UN.', { exact: false })).toBeVisible();
   await page.goto(`/conferencia/${receiptId}`);
   await expect(page.getByText('Na nota: 2 CX', { exact: true })).toBeVisible();
@@ -251,4 +257,31 @@ test('database: durable XML inbox, learned mapping and receipt revisions', async
   await page.screenshot({ path: '/tmp/stockai-return-invoices.png', fullPage: true });
   await page.goto('/contas-a-pagar');
   await expect(page.getByText('3 com recebimento · 0 aguardando identificação')).toBeVisible();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/produtos');
+  await page.getByRole('button', { name: 'Novo produto', exact: true }).click();
+  await page.getByLabel('Nome do produto').fill('Arroz interno 2');
+  await page.getByLabel('Código interno', { exact: true }).fill('AR-SIMILAR');
+  await page.getByLabel('Unidade do produto').selectOption('KG');
+  await page.getByLabel('Compõe CMV?').selectOption('true');
+  await page.getByRole('button', { name: 'Salvar produto' }).click();
+  await page.getByRole('button', { name: 'Nomes parecidos', exact: true }).click();
+  const firstRice = page
+    .getByRole('row')
+    .filter({ has: page.getByRole('cell', { name: 'Arroz interno', exact: true }) });
+  await expect(firstRice.getByLabel('Código interno do produto')).toHaveValue('AR-02');
+  await firstRice.getByLabel('Código interno do produto').fill('AR-03');
+  await firstRice.getByRole('button', { name: 'Salvar código' }).click();
+  await expect(firstRice.getByRole('status')).toHaveText('Código salvo.');
+  await page.getByRole('button', { name: 'Tema claro', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await expect(page.locator('.topbar')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+  await page.screenshot({ path: '/tmp/stockai-similar-products-light.png', fullPage: true });
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.getByRole('button', { name: 'Nomes parecidos', exact: true }).click();
+  await expect(firstRice.getByLabel('Código interno do produto')).toHaveValue('AR-03');
+  await page.getByRole('button', { name: 'Tema claro', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.screenshot({ path: '/tmp/stockai-similar-products-dark.png', fullPage: true });
 });

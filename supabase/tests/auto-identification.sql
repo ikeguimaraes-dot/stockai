@@ -68,12 +68,21 @@ do $$ begin
  if not exists(select 1 from public.stockai_return_invoices() where id=current_setting('test.return')::uuid and invoice_number='123' and total_cents=19000) then raise exception 'Return not listed';end if;
  if (select count(*) from public.stockai_return_invoices())<>1 then raise exception 'Non-return listed';end if;
 end $$;
+-- Editing a code preserves fiscal links and classification, rejects collisions and stale edits.
+select public.stockai_update_internal_code(current_setting('test.rice')::uuid,'RICE-NEW','AR-01');
+do $$ begin
+ if not exists(select 1 from public.stockai_items where id=current_setting('test.rice')::uuid and internal_code='RICE-NEW' and name='Arroz' and base_uom='KG' and composes_cmv=true) then raise exception 'Code edit changed product';end if;
+ if not exists(select 1 from public.stockai_product_links where item_id=current_setting('test.rice')::uuid and supplier_code='A&1') then raise exception 'Code edit broke mappings';end if;
+ begin perform public.stockai_update_internal_code(current_setting('test.rice')::uuid,'AUTO-0001','RICE-NEW');raise exception 'Duplicate code accepted';exception when unique_violation then null;end;
+ begin perform public.stockai_update_internal_code(current_setting('test.rice')::uuid,'STALE','AR-01');raise exception 'Stale edit accepted';exception when serialization_failure then null;end;
+end $$;
 -- Neither a different tenant nor an operator may create products through this endpoint.
 reset role;
 insert into public.stockai_memberships(org_id,unit_id,user_id,role) values(current_setting('test.org')::uuid,current_setting('test.company')::uuid,'42222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa','operator');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','42222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
 do $$ begin
+ begin perform public.stockai_update_internal_code(current_setting('test.rice')::uuid,'UNAUTHORIZED','RICE-NEW');raise exception 'Operator edited code';exception when insufficient_privilege then null;end;
  if exists(select 1 from public.stockai_return_invoices()) then raise exception 'Operator accessed return inbox';end if;
  begin perform public.stockai_auto_identify_xml(current_setting('test.inbox')::uuid,current_setting('test.company')::uuid);raise exception 'Operator accessed manager XML';exception when insufficient_privilege then null;end;
 end $$;

@@ -52,6 +52,13 @@ export default async function Note({ params }: { params: Promise<{ id: string }>
       items={catalog.items.filter((i) => i.org_id === note.org_id)}
       history={history.data}
       hasXml={!!document.data}
+      canEditProductCodes={members.data.some(
+        (m) =>
+          !m.unit_id &&
+          !m.revoked_at &&
+          (!m.expires_at || Date.parse(m.expires_at) > Date.now()) &&
+          ['owner', 'manager', 'implementer'].includes(m.role),
+      )}
     />
   );
 }

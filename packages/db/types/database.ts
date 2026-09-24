@@ -1360,6 +1360,10 @@ export type Database = {
         Args: { p_counts: Json; p_receipt: string }
         Returns: string
       }
+      stockai_update_internal_code: {
+        Args: { p_code: string; p_expected: string; p_item: string }
+        Returns: undefined
+      }
       stockai_xml_pending: {
         Args: { p_id: string; p_message: string; p_unit?: string }
         Returns: undefined

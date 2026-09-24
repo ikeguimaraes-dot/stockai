@@ -3580,3 +3580,199 @@ select:focus {
 .xml-item .inline-product-editor {
   margin: 0 0 20px;
 }
+
+/* Theme controls remain available across every screen. */
+.theme-header {
+  height: 44px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  position: sticky;
+  top: 0;
+  z-index: 45;
+}
+.theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.sidebar {
+  top: 44px;
+  height: calc(100dvh - 44px);
+}
+.product-code-editor {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 9px 0;
+}
+.product-code-editor label {
+  display: grid;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.product-code-editor input {
+  width: 175px;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--ink);
+}
+.product-code-editor small {
+  flex-basis: 100%;
+}
+.similar-help {
+  margin: 0;
+  padding: 20px;
+  color: var(--muted);
+}
+.similar-products-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 780px;
+}
+.similar-products-table th,
+.similar-products-table td {
+  text-align: left;
+  padding: 16px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+.similar-products-table td:first-child {
+  min-width: 220px;
+}
+.similar-products-table td:last-child {
+  color: var(--muted);
+  max-width: 360px;
+  line-height: 1.7;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #f7f4fc;
+  --panel: #ffffff;
+  --surface: #ede5f7;
+  --ink: #2c193b;
+  --muted: #6b587b;
+  --accent: #7741aa;
+  --gold: #a76800;
+  --line: #d9cce6;
+  --sidebar: #eee6f7;
+}
+html[data-theme='light'] body {
+  background: radial-gradient(ellipse at 95% 0%, #dbc9f244, transparent 48%), var(--bg);
+}
+html[data-theme='light'] .sidebar {
+  background: linear-gradient(160deg, #f4edfb, #e9def3);
+}
+html[data-theme='light'] .sidebar .nav-item {
+  color: var(--ink);
+}
+html[data-theme='light'] .nav-item.active {
+  color: #552781;
+  background: #dfcef2;
+  border-color: #c9ace6;
+  box-shadow: none;
+}
+html[data-theme='light'] .sidebar .nav-item.active svg {
+  color: #7741aa;
+}
+html[data-theme='light'] .metric-brand-accent,
+html[data-theme='light'] .metric-violet {
+  background: linear-gradient(120deg, #f0e3ff, #e4d2f5);
+  color: var(--ink);
+}
+html[data-theme='light'] .metric {
+  --metric-tint: #eadcf7;
+  --metric-color: #7741aa;
+}
+html[data-theme='light'] .attention {
+  background: linear-gradient(120deg, #fff9ea, #fff1cd);
+  border-color: #e7cf95;
+}
+html[data-theme='light'] .attention .full {
+  color: white;
+}
+html[data-theme='light'] .access-form {
+  background: var(--panel);
+}
+html[data-theme='light'] .access-story {
+  background: linear-gradient(140deg, #e8d6f6, #f6eefa);
+  color: var(--ink);
+}
+html[data-theme='light'] .access-story h1,
+html[data-theme='light'] .access-story p {
+  color: var(--ink);
+}
+html[data-theme='light'] .access-story > small {
+  color: var(--muted);
+}
+html[data-theme='light'] input::placeholder {
+  color: #806b92;
+}
+html[data-theme='light'] .xml-error,
+html[data-theme='light'] .error,
+html[data-theme='light'] .rose-text {
+  color: #a42c58;
+}
+html[data-theme='light'] .primary {
+  background: linear-gradient(110deg, #ffce45, #ffbd19);
+  color: #291533;
+}
+@media (max-width: 600px) {
+  .theme-header {
+    padding: 0 16px;
+  }
+  .product-code-editor input {
+    width: 150px;
+  }
+}
+html[data-theme='light'] .cmv-no,
+html[data-theme='light'] .supplier-icon.rose {
+  color: #a42c58;
+}
+html[data-theme='light'] .access-story .brand {
+  color: var(--ink);
+}
+html[data-theme='light'] .company-symbol {
+  color: #fff;
+}
+html[data-theme='light'] .topbar {
+  background: var(--panel);
+}
+html[data-theme='light'] .secondary {
+  background: var(--surface);
+  color: var(--accent);
+  border-color: var(--line);
+}
+html[data-theme='light'] .secondary:hover {
+  background: #dfcef2;
+}
+.similar-products-table td {
+  font-size: 13px;
+}
+.similar-products-table th {
+  font-size: 11px;
+}
+.similar-products-table td strong {
+  font-size: inherit;
+}
+html[data-theme='light'] .secondary {
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}

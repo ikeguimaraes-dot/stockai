@@ -1,6 +1,8 @@
 'use client';
 import { OrderNav } from './order-nav';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { similarProducts } from '@stockai/core';
+import { ProductCode } from './product-code';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -31,6 +33,8 @@ export function ProductDirectory({
   const router = useRouter();
   const [orgId, setOrgId] = useState(orgs[0]?.id ?? '');
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState('catalog');
+  const similar = useMemo(() => similarProducts(items), [items]);
   const [filter, setFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [editing, setEditing] = useState<Item | 'new' | null>(null);
@@ -40,17 +44,22 @@ export function ProductDirectory({
   const [saved, setSaved] = useState('');
   const allowed = editableOrgs.includes(orgId);
   const groupCategories = categories.filter((c) => c.org_id === orgId);
-  const filtered = items.filter(
-    (i) =>
-      i.org_id === orgId &&
-      `${i.internal_code} ${i.name}`
-        .toLocaleLowerCase('pt-BR')
-        .includes(search.trim().toLocaleLowerCase('pt-BR')) &&
-      (filter === 'all' ||
-        (filter === 'pending' ? i.composes_cmv === null : String(i.composes_cmv) === filter)) &&
-      (categoryFilter === 'all' ||
-        (categoryFilter === 'none' ? !i.category_id : i.category_id === categoryFilter)),
-  );
+  const filtered = items
+    .filter(
+      (i) =>
+        i.org_id === orgId &&
+        `${i.internal_code} ${i.name}`
+          .toLocaleLowerCase('pt-BR')
+          .includes(search.trim().toLocaleLowerCase('pt-BR')) &&
+        (filter === 'all' ||
+          (filter === 'pending' ? i.composes_cmv === null : String(i.composes_cmv) === filter)) &&
+        (categoryFilter === 'all' ||
+          (categoryFilter === 'none' ? !i.category_id : i.category_id === categoryFilter)),
+    )
+    .sort(
+      (a, b) =>
+        a.name.localeCompare(b.name, 'pt-BR') || a.internal_code.localeCompare(b.internal_code),
+    );
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
@@ -141,6 +150,18 @@ export function ProductDirectory({
             )}
           </div>
           <div className="catalog-filters">
+            <button
+              className={tab === 'catalog' ? 'primary' : 'secondary'}
+              onClick={() => setTab('catalog')}
+            >
+              Catálogo
+            </button>
+            <button
+              className={tab === 'similar' ? 'primary' : 'secondary'}
+              onClick={() => setTab('similar')}
+            >
+              Nomes parecidos
+            </button>
             <label>
               Grupo
               <select
@@ -383,42 +404,93 @@ export function ProductDirectory({
           <p className="muted">
             {filtered.length} produtos · Cadastros compartilhados entre as empresas deste grupo.
           </p>
-          <div className="catalog-grid">
-            {filtered.map((i) => (
-              <article className="catalog-card" key={i.id}>
-                <div className="catalog-icon">
-                  <Package size={22} />
-                </div>
-                <h2>{i.name}</h2>
-                <span>
-                  {i.internal_code} · {i.base_uom} ·{' '}
-                  {categories.find((c) => c.id === i.category_id)?.name ?? 'Sem categoria'}
-                </span>
-                <p
-                  className={`cmv-badge ${i.composes_cmv === true ? 'cmv-yes' : i.composes_cmv === false ? 'cmv-no' : 'cmv-pending'}`}
-                >
-                  Compõe CMV:{' '}
-                  <strong>
-                    {i.composes_cmv === null ? 'Não definido' : i.composes_cmv ? 'Sim' : 'Não'}
-                  </strong>
-                </p>
-                {allowed && (
-                  <button
-                    className="text-button"
-                    aria-label={`Editar produto ${i.name}`}
-                    onClick={() => {
-                      setEditing(i);
-                      setCategory(null);
-                      setError('');
-                    }}
+          {tab === 'similar' && (
+            <section className="panel">
+              <p className="similar-help">
+                Produtos com nomes parecidos, em ordem alfabética. Confira marca, unidade e
+                embalagem antes de concluir que são iguais. Alterar o código atualiza o cadastro em
+                todas as notas; não une produtos.
+              </p>
+              <div className="table-scroll">
+                <table className="similar-products-table">
+                  <thead>
+                    <tr>
+                      <th>Produto (A–Z)</th>
+                      <th>Nosso código</th>
+                      <th>Unidade</th>
+                      <th>Nomes parecidos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered
+                      .filter((i) => similar.has(i.id))
+                      .map((i) => (
+                        <tr key={i.id}>
+                          <td>
+                            <strong>{i.name}</strong>
+                          </td>
+                          <td>
+                            <ProductCode itemId={i.id} code={i.internal_code} editable={allowed} />
+                          </td>
+                          <td>{i.base_uom}</td>
+                          <td>
+                            {(similar.get(i.id) ?? [])
+                              .map((id) => items.find((p) => p.id === id))
+                              .filter(Boolean)
+                              .map((p) => (
+                                <div key={p!.id}>
+                                  {p!.name} · {p!.internal_code}
+                                </div>
+                              ))}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+              {!filtered.some((i) => similar.has(i.id)) && (
+                <p className="similar-help">Nenhum nome parecido encontrado com estes filtros.</p>
+              )}
+            </section>
+          )}
+          {tab === 'catalog' && (
+            <div className="catalog-grid">
+              {filtered.map((i) => (
+                <article className="catalog-card" key={i.id}>
+                  <div className="catalog-icon">
+                    <Package size={22} />
+                  </div>
+                  <h2>{i.name}</h2>
+                  <span>
+                    {i.internal_code} · {i.base_uom} ·{' '}
+                    {categories.find((c) => c.id === i.category_id)?.name ?? 'Sem categoria'}
+                  </span>
+                  <p
+                    className={`cmv-badge ${i.composes_cmv === true ? 'cmv-yes' : i.composes_cmv === false ? 'cmv-no' : 'cmv-pending'}`}
                   >
-                    <Pencil size={15} />
-                    Editar classificação
-                  </button>
-                )}
-              </article>
-            ))}
-          </div>
+                    Compõe CMV:{' '}
+                    <strong>
+                      {i.composes_cmv === null ? 'Não definido' : i.composes_cmv ? 'Sim' : 'Não'}
+                    </strong>
+                  </p>
+                  {allowed && (
+                    <button
+                      className="text-button"
+                      aria-label={`Editar produto ${i.name}`}
+                      onClick={() => {
+                        setEditing(i);
+                        setCategory(null);
+                        setError('');
+                      }}
+                    >
+                      <Pencil size={15} />
+                      Editar classificação
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
           {!filtered.length && (
             <div className="catalog-empty">
               <Package size={36} />
