@@ -1182,6 +1182,10 @@ export type Database = {
         Args: { p_receipt: string }
         Returns: undefined
       }
+      stockai_auto_identify_xml: {
+        Args: { p_id: string; p_unit: string }
+        Returns: Json
+      }
       stockai_bootstrap_organization: {
         Args: { p_org_name: string; p_unit_name: string }
         Returns: string

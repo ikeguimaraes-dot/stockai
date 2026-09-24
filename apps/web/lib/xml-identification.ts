@@ -98,6 +98,7 @@ export async function processXml(
   chosenUnit?: string,
   selections?: Selection[],
   remember = false,
+  createMissing = false,
 ) {
   const c = await serverClient();
   const info = await inspectXml(id);
@@ -141,6 +142,25 @@ export async function processXml(
       status: 'duplicate',
       message: 'Esta nota já foi importada.',
       createdId: result.data,
+    };
+  }
+  if (createMissing && !selections) {
+    const result = await c.rpc('stockai_auto_identify_xml', { p_id: id, p_unit: company.id });
+    if (result.error) throw new Error(result.error.message);
+    const summary = z
+      .object({
+        receipt_id: z.string().uuid(),
+        created_products: z.number(),
+        saved_links: z.number(),
+      })
+      .parse(result.data);
+    return {
+      id,
+      status: 'imported',
+      message: 'Identificada e enviada para conferência.',
+      createdId: summary.receipt_id,
+      createdProducts: summary.created_products,
+      savedLinks: summary.saved_links,
     };
   }
   const selected =

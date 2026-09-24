@@ -183,4 +183,27 @@ test('database: durable XML inbox, learned mapping and receipt revisions', async
   await page.getByRole('link', { name: 'Abrir Identificação' }).click();
   await expect(page.getByRole('button', { name: /invalido.xml/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /outra-empresa.xml/ })).toBeVisible();
+  // Bulk reprocessing creates missing codes and keeps invalid/foreign-company XMLs pending.
+  await page.goto('/operacao');
+  await page.getByRole('button', { name: 'Importar XML', exact: true }).click();
+  await page.getByLabel('Arquivo XML da NF-e').setInputFiles({
+    name: 'nota-125-auto.xml',
+    mimeType: 'application/xml',
+    buffer: Buffer.from(invoice(125).replace('<cProd>B2</cProd>', '<cProd>NOVO</cProd>')),
+  });
+  await expect(
+    page.getByRole('dialog').getByText('Salva para identificação', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Abrir Identificação' }).click();
+  await page.getByRole('button', { name: 'Reprocessar pendentes', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText(
+    '1 arquivo(s) identificado(s), 1 código(s) criado(s)',
+    { timeout: 30000 },
+  );
+  await expect(page.getByRole('button', { name: /nota-125-auto.xml/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /invalido.xml/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /outra-empresa.xml/ })).toBeVisible();
+  await page.goto('/produtos');
+  await expect(page.getByText('Leite [CX de compra]', { exact: true })).toBeVisible();
+  await expect(page.getByText('AUTO-0001 · UN · Sem categoria', { exact: true })).toBeVisible();
 });

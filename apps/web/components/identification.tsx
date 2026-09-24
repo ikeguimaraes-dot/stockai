@@ -98,7 +98,9 @@ export function Identification({
       body: JSON.stringify({
         action: 'identify',
         id,
-        ...(review ? { unitId: unit, selections: mapping, remember: canRemember } : {}),
+        ...(review
+          ? { unitId: unit, selections: mapping, remember: canRemember }
+          : { createMissing: true }),
       }),
     });
     const result = await r.json();
@@ -124,14 +126,24 @@ export function Identification({
     setBusy(true);
     setError('');
     let done = 0;
+    let created = 0;
+    let failed = 0;
     try {
       const pending = entries.filter((e) => e.status === 'pending');
       for (let i = 0; i < pending.length; i++) {
         setMessage(`Reprocessando ${i + 1} de ${pending.length}…`);
-        const r = await process(pending[i].id);
-        if (r.status !== 'pending') done++;
+        try {
+          const r = await process(pending[i].id);
+          if (r.status !== 'pending') done++;
+          created += r.createdProducts ?? 0;
+        } catch {
+          failed++;
+        }
       }
-      setMessage(`${done} arquivo(s) identificado(s). Pendências restantes continuam salvas.`);
+      setMessage(
+        `${done} arquivo(s) identificado(s), ${created} código(s) criado(s). ${pending.length - done} pendência(s) continuam salvas.` +
+          (failed ? ` ${failed} arquivo(s) não puderam ser processados; tente novamente.` : ''),
+      );
       setInfo(null);
       router.refresh();
     } catch (e) {
@@ -304,7 +316,9 @@ export function Identification({
               <h1>Identificação de XMLs</h1>
               <p>
                 Vincule os produtos uma vez. As próximas notas usam a relação salva para o
-                fornecedor.
+                fornecedor. Reprocessar pendentes cria códigos para produtos ausentes. Embalagens
+                sem conversão salva são cadastradas como uma unidade de compra; categoria e CMV
+                ficam para você classificar.
               </p>
             </div>
             <button

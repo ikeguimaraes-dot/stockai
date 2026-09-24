@@ -81,6 +81,7 @@ export async function POST(request: Request) {
           unitId: z.string().uuid().optional(),
           selections: z.array(selection).max(990).optional(),
           remember: z.boolean().optional(),
+          createMissing: z.boolean().optional(),
         }),
       ])
       .parse(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)));
@@ -101,6 +102,7 @@ export async function POST(request: Request) {
         input.action === 'identify' ? input.unitId : undefined,
         input.action === 'identify' ? input.selections : undefined,
         input.action === 'identify' && input.remember === true,
+        input.action === 'identify' && input.createMissing === true,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Revise o arquivo em Identificação.';
