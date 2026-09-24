@@ -46,12 +46,13 @@ Sem Supabase, `/demo` funciona com exemplos persistidos no navegador. `/operacao
 - Produtos com código interno exclusivo por grupo, categorias e classificação de CMV. Vínculos por grupo, CNPJ do fornecedor, código e unidade comercial reutilizam o produto e o fator de conversão nas próximas notas.
 - Edição de notas em `/notas/[id]`, inclusive concluídas. Cada correção cria uma revisão com motivo e snapshots; movimentos anteriores são estornados e substituídos transacionalmente. Edições antes do fechamento reiniciam a conferência. O XML original permanece disponível para download.
 - Conferência de falta, excesso e item não entregue; divergência exige aprovação; recebimento conforme fecha automaticamente.
-- XML original imutável e histórico das revisões operacionais; físico contado; financeiro limitado ao faturado, descontando faltas. Valores em centavos, quantidades `numeric(14,4)`.
+- XML original imutável e histórico das revisões operacionais; físico contado; crédito por faltas limitado ao valor faturado. Valores em centavos, quantidades `numeric(14,4)`.
 - Fechamento transacional: movimentação, crédito e auditoria gravados juntos. Travamento do recebimento impede duas aprovações de gerarem entradas duplicadas.
 - Movimentações e auditoria imutáveis. Não há edição destrutiva de estoque pela aplicação.
 - Rota `/conferencia/[id]` autenticada retorna apenas identificação dos itens e unidade de medida. Operadores não recebem preços nem quantidades esperadas no payload.
 - Painel, filtros, busca, fornecedores, fila de aprovação, CSV e entradas confirmadas, responsivos.
 - Fornecedores cadastrados aparecem mesmo sem recebimentos, com busca por nomes anteriores, referências e CNPJ. Bases importadas preservam origem e linhas da planilha; cadastros ambíguos podem ser filtrados para revisão. O formulário de recebimento sugere fornecedores do grupo da empresa selecionada. Produtos preparados a partir de XMLs podem sugerir vínculos em Identificação; o usuário confirma as conversões antes de salvar a relação reutilizável.
+- Contas a pagar em `/contas-a-pagar`: notas XML (mesmo pendentes de identificação), recebimentos manuais e despesas sem nota/CNPJ. Parcelas e vencimentos do XML, registro de baixa, cancelamento, filtros por empresa e histórico imutável. Despesas por nome criam ou reutilizam a ficha individual do fornecedor.
 - Testes de domínio, integração SQL, navegador e CI.
 
 ## Limites desta etapa
@@ -108,3 +109,13 @@ Aceita XML UTF-8 até 1 MB, até 990 itens, NF-e de saída normal do fornecedor 
 O menu **Produtos** (`/produtos`) reúne produtos cadastrados manualmente ou introduzidos pelos recebimentos. Gestores do grupo podem criar/renomear categorias, cadastrar produtos e editar categoria e **Compõe CMV: Sim/Não**. Busca e filtros ajudam a revisar o catálogo. O cadastro é compartilhado entre as empresas do mesmo grupo; categorias não podem ser vinculadas entre grupos.
 
 Produtos antigos e importados sem revisão ficam com CMV **Não definido** (`null`), sem pressupor Sim ou Não. Ao salvar pelo catálogo, a escolha é obrigatória. Na prévia XML, produtos novos aceitam categoria e CMV; os existentes preservam a classificação atual. Novos recebimentos nunca sobrescrevem essa classificação. Identificação e unidade de produtos existentes ficam preservadas; editar a classificação não altera quantidades, valores fiscais ou créditos. A marcação prepara o catálogo para a apuração de CMV; não implementa por si só o cálculo de consumo/CMV.
+
+## Contas a pagar
+
+A migration `20260924130506_accounts_payable.sql` cria contas, parcelas e histórico com RLS de gestor (incluindo gestor de unidade) e escrita exclusivamente por RPC. Triggers diferidos integram os documentos ao final da transação, sem lançar estoque ou executar pagamentos. A chave da nota por grupo e o recebimento único impedem duplicação ao sair de Identificação; despesas manuais usam uma chave de requisição para retentativas.
+
+O financeiro usa o total da nota, incluindo frete e tributos. Créditos por divergência física continuam separados e não são abatidos automaticamente. Parcelas do XML só são aceitas quando somam o total; cobranças incompatíveis ficam para revisão. Sem vencimento no XML, a data permanece em branco. XML não autorizado ou sem empresa destinatária identificada permanece na fila e não gera conta.
+
+Edições na nota atualizam a conta e sinalizam revisão quando alteram total, fornecedor ou empresa; parcelas e baixas existentes são preservadas. O usuário ajusta as parcelas para o novo total antes de salvar. Todas as edições financeiras têm versão e histórico. Importar uma nota nunca a marca como paga, inclusive notas históricas. A baixa registra o pagamento informado pelo usuário; não há integração bancária.
+
+Testes: `supabase/tests/payables.sql` e `tests/e2e/payables.spec.ts` cobrem parcelas, XML pendente, deduplicação, recebimento manual, despesas sem CNPJ, baixas, histórico, edição e isolamento de acesso.

@@ -1247,7 +1247,7 @@ tbody tr:hover {
   grid-template-columns: 2fr 0.8fr 1fr 1fr auto;
   gap: 9px;
   margin-bottom: 14px;
-  align-items: end;
+  align-items: flex-end;
 }
 .new-line .icon-button {
   margin-bottom: 4px;
@@ -2791,7 +2791,7 @@ select:focus {
 .order-line-input {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 140px 38px;
-  align-items: end;
+  align-items: flex-end;
   gap: 14px;
 }
 .order-line-input .icon-button {
@@ -3143,7 +3143,7 @@ select:focus {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1fr auto;
   gap: 12px;
-  align-items: end;
+  align-items: flex-end;
   padding-bottom: 18px;
   border-bottom: 1px solid var(--line);
 }
@@ -3329,4 +3329,145 @@ select:focus {
   .supplier-profile-fields {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.payables-main {
+  min-width: 0;
+}
+.payable-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+.payable-stats > div {
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+.payable-stats strong {
+  font-size: 26px;
+}
+.payable-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 24px 0;
+  align-items: flex-end;
+}
+.payable-list {
+  display: grid;
+  gap: 14px;
+}
+.payable-card {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  overflow-wrap: anywhere;
+}
+.payable-card h2 {
+  margin: 10px 0;
+  font-size: 20px;
+}
+.payable-card p {
+  margin: 8px 0;
+}
+.payable-amount {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  text-align: right;
+}
+.payable-amount strong {
+  font-size: 24px;
+}
+.payable-wide {
+  grid-column: 1/-1;
+}
+.payable-modal {
+  max-width: 920px;
+  width: calc(100vw - 32px);
+  max-height: 90vh;
+  overflow: auto;
+}
+.payable-modal-content > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.payable-form {
+  border: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  min-width: 0;
+}
+.payable-form input:not([type='checkbox']),
+.payable-form textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 11px;
+  font: inherit;
+}
+.payable-part {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.payable-part > strong,
+.payable-part > button {
+  grid-column: 1/-1;
+}
+.payable-history {
+  max-width: 900px;
+  margin: 32px auto;
+  padding: 24px;
+}
+.payable-history article {
+  padding: 20px;
+  margin-top: 16px;
+}
+@media (max-width: 700px) {
+  .payable-stats {
+    grid-template-columns: 1fr;
+  }
+  .payable-card {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 18px;
+  }
+  .payable-amount {
+    text-align: left;
+  }
+  .payable-form,
+  .payable-part {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .payable-toolbar > * {
+    width: 100%;
+  }
+  .payable-modal {
+    padding: 18px;
+  }
+}
+
+.payable-modal {
+  padding: 24px;
+}
+
+.payables-back {
+  display: inline-block;
+  margin-bottom: 18px;
+  color: var(--accent);
+  font-size: 13px;
 }

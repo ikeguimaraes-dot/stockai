@@ -405,6 +405,187 @@ export type Database = {
         }
         Relationships: []
       }
+      stockai_payable_events: {
+        Row: {
+          actor_id: string | null
+          after_data: Json
+          before_data: Json | null
+          created_at: string
+          id: string
+          kind: string
+          org_id: string
+          payable_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          after_data: Json
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          kind: string
+          org_id: string
+          payable_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          after_data?: Json
+          before_data?: Json | null
+          created_at?: string
+          id?: string
+          kind?: string
+          org_id?: string
+          payable_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_payable_events_org_id_payable_id_fkey"
+            columns: ["org_id", "payable_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_payables"
+            referencedColumns: ["org_id", "id"]
+          },
+        ]
+      }
+      stockai_payable_installments: {
+        Row: {
+          amount_cents: number
+          due_on: string | null
+          id: string
+          org_id: string
+          paid_on: string | null
+          payable_id: string
+          sequence: number
+        }
+        Insert: {
+          amount_cents: number
+          due_on?: string | null
+          id?: string
+          org_id: string
+          paid_on?: string | null
+          payable_id: string
+          sequence: number
+        }
+        Update: {
+          amount_cents?: number
+          due_on?: string | null
+          id?: string
+          org_id?: string
+          paid_on?: string | null
+          payable_id?: string
+          sequence?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_payable_installments_org_id_payable_id_fkey"
+            columns: ["org_id", "payable_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_payables"
+            referencedColumns: ["org_id", "id"]
+          },
+        ]
+      }
+      stockai_payables: {
+        Row: {
+          cancelled: boolean
+          created_at: string
+          creditor_name: string
+          description: string
+          document_number: string | null
+          id: string
+          inbox_id: string | null
+          issued_on: string | null
+          notes: string
+          org_id: string
+          receipt_id: string | null
+          review_note: string | null
+          revision: number
+          source: string
+          source_key: string
+          supplier_id: string | null
+          total_cents: number
+          unit_id: string
+          updated_at: string
+        }
+        Insert: {
+          cancelled?: boolean
+          created_at?: string
+          creditor_name: string
+          description: string
+          document_number?: string | null
+          id?: string
+          inbox_id?: string | null
+          issued_on?: string | null
+          notes?: string
+          org_id: string
+          receipt_id?: string | null
+          review_note?: string | null
+          revision?: number
+          source: string
+          source_key: string
+          supplier_id?: string | null
+          total_cents: number
+          unit_id: string
+          updated_at?: string
+        }
+        Update: {
+          cancelled?: boolean
+          created_at?: string
+          creditor_name?: string
+          description?: string
+          document_number?: string | null
+          id?: string
+          inbox_id?: string | null
+          issued_on?: string | null
+          notes?: string
+          org_id?: string
+          receipt_id?: string | null
+          review_note?: string | null
+          revision?: number
+          source?: string
+          source_key?: string
+          supplier_id?: string | null
+          total_cents?: number
+          unit_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_payables_inbox_id_fkey"
+            columns: ["inbox_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_xml_inbox"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stockai_payables_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stockai_payables_org_id_receipt_id_fkey"
+            columns: ["org_id", "receipt_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_receipts"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "stockai_payables_org_id_supplier_id_fkey"
+            columns: ["org_id", "supplier_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_suppliers"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "stockai_payables_org_id_unit_id_fkey"
+            columns: ["org_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_units"
+            referencedColumns: ["org_id", "id"]
+          },
+        ]
+      }
       stockai_product_categories: {
         Row: {
           created_at: string
@@ -1091,6 +1272,15 @@ export type Database = {
       }
       stockai_save_category: {
         Args: { p_id?: string; p_name: string; p_org: string }
+        Returns: string
+      }
+      stockai_save_payable: {
+        Args: {
+          p_data?: Json
+          p_id?: string
+          p_request?: string
+          p_revision?: number
+        }
         Returns: string
       }
       stockai_save_product: {

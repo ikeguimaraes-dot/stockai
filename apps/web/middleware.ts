@@ -24,6 +24,7 @@ export const config = {
     '/operacao/:path*',
     '/empresas',
     '/produtos',
+    '/contas-a-pagar/:path*',
     '/fornecedores/:path*',
     '/identificacao',
     '/notas/:path*',

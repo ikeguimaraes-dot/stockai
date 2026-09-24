@@ -1,8 +1,20 @@
 import Link from 'next/link';
-import { ClipboardList, Truck, ScanLine } from 'lucide-react';
-export function OrderNav({ active }: { active?: 'orders' | 'deliveries' | 'identification' }) {
+import { ClipboardList, Truck, ScanLine, Wallet } from 'lucide-react';
+export function OrderNav({
+  active,
+}: {
+  active?: 'orders' | 'deliveries' | 'identification' | 'payables';
+}) {
   return (
     <>
+      <Link
+        href="/contas-a-pagar"
+        className={`nav-item ${active === 'payables' ? 'active' : ''}`}
+        aria-current={active === 'payables' ? 'page' : undefined}
+      >
+        <Wallet size={19} />
+        <span>Contas a pagar</span>
+      </Link>
       <Link
         href="/identificacao"
         aria-current={active === 'identification' ? 'page' : undefined}
