@@ -33,6 +33,7 @@ export default async function PayablesPage() {
     const res = await c
       .from('stockai_payables')
       .select('*,installments:stockai_payable_installments(*)')
+      .eq('on_hold', false)
       .order('created_at', { ascending: false })
       .order('id')
       .range(start, start + 299);
@@ -40,9 +41,25 @@ export default async function PayablesPage() {
     bills.push(...res.data);
     if (res.data.length < 300) break;
   }
+  const pending = [];
+  for (let start = 0; ; start += 500) {
+    const r = await c
+      .from('stockai_payable_import_rows')
+      .select('*')
+      .eq('state', 'pending')
+      .order('file_name')
+      .order('sheet_name')
+      .order('row_number')
+      .order('id')
+      .range(start, start + 499);
+    if (r.error) throw new Error('Não foi possível carregar as despesas sem identificação.');
+    pending.push(...r.data);
+    if (r.data.length < 500) break;
+  }
   return (
     <Payables
       bills={bills}
+      pendingImports={pending}
       units={allowed}
       suppliers={suppliers}
       today={new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date())}

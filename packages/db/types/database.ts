@@ -446,6 +446,82 @@ export type Database = {
           },
         ]
       }
+      stockai_payable_import_rows: {
+        Row: {
+          created_at: string
+          file_name: string
+          id: string
+          org_id: string
+          payable_id: string | null
+          proposed_data: Json
+          reason: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          row_number: number
+          sheet_name: string
+          source_data: Json
+          source_fingerprint: string
+          state: string
+          unit_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          id?: string
+          org_id: string
+          payable_id?: string | null
+          proposed_data?: Json
+          reason?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          row_number: number
+          sheet_name: string
+          source_data: Json
+          source_fingerprint: string
+          state?: string
+          unit_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          id?: string
+          org_id?: string
+          payable_id?: string | null
+          proposed_data?: Json
+          reason?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          row_number?: number
+          sheet_name?: string
+          source_data?: Json
+          source_fingerprint?: string
+          state?: string
+          unit_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_payable_import_rows_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stockai_payable_import_rows_org_id_payable_id_fkey"
+            columns: ["org_id", "payable_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_payables"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "stockai_payable_import_rows_org_id_unit_id_fkey"
+            columns: ["org_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_units"
+            referencedColumns: ["org_id", "id"]
+          },
+        ]
+      }
       stockai_payable_installments: {
         Row: {
           amount_cents: number
@@ -453,6 +529,7 @@ export type Database = {
           id: string
           org_id: string
           paid_on: string | null
+          paid_without_date: boolean
           payable_id: string
           sequence: number
         }
@@ -462,6 +539,7 @@ export type Database = {
           id?: string
           org_id: string
           paid_on?: string | null
+          paid_without_date?: boolean
           payable_id: string
           sequence: number
         }
@@ -471,6 +549,7 @@ export type Database = {
           id?: string
           org_id?: string
           paid_on?: string | null
+          paid_without_date?: boolean
           payable_id?: string
           sequence?: number
         }
@@ -492,11 +571,15 @@ export type Database = {
           description: string
           document_number: string | null
           id: string
+          import_references: Json
           inbox_id: string | null
           issued_on: string | null
+          merged_into_id: string | null
           notes: string
+          on_hold: boolean
           org_id: string
           receipt_id: string | null
+          reference_month: string | null
           review_note: string | null
           revision: number
           source: string
@@ -513,11 +596,15 @@ export type Database = {
           description: string
           document_number?: string | null
           id?: string
+          import_references?: Json
           inbox_id?: string | null
           issued_on?: string | null
+          merged_into_id?: string | null
           notes?: string
+          on_hold?: boolean
           org_id: string
           receipt_id?: string | null
+          reference_month?: string | null
           review_note?: string | null
           revision?: number
           source: string
@@ -534,11 +621,15 @@ export type Database = {
           description?: string
           document_number?: string | null
           id?: string
+          import_references?: Json
           inbox_id?: string | null
           issued_on?: string | null
+          merged_into_id?: string | null
           notes?: string
+          on_hold?: boolean
           org_id?: string
           receipt_id?: string | null
+          reference_month?: string | null
           review_note?: string | null
           revision?: number
           source?: string
@@ -555,6 +646,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "stockai_xml_inbox"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stockai_payables_merged_fk"
+            columns: ["org_id", "merged_into_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_payables"
+            referencedColumns: ["org_id", "id"]
           },
           {
             foreignKeyName: "stockai_payables_org_id_fkey"
@@ -1259,6 +1357,15 @@ export type Database = {
         }
         Returns: string
       }
+      stockai_link_payable: {
+        Args: {
+          p_bill: string
+          p_revision: number
+          p_target: string
+          p_target_revision: number
+        }
+        Returns: string
+      }
       stockai_order_units: { Args: never; Returns: Json }
       stockai_queue_xml: {
         Args: { p_filename: string; p_request: string; p_xml: string }
@@ -1296,6 +1403,10 @@ export type Database = {
       stockai_rename_product: {
         Args: { p_expected: string; p_item: string; p_name: string }
         Returns: undefined
+      }
+      stockai_resolve_payable_import: {
+        Args: { p_data: Json; p_existing?: string; p_row: string }
+        Returns: string
       }
       stockai_return_invoices: {
         Args: never

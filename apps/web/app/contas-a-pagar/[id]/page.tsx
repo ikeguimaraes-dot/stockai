@@ -27,7 +27,9 @@ function snapshot(value: Json | null) {
             ·{' '}
             {typeof part.paid_on === 'string' && part.paid_on
               ? `Paga em ${part.paid_on.split('-').reverse().join('/')}`
-              : 'Em aberto'}
+              : part.paid_without_date
+                ? 'Paga (data não informada)'
+                : 'Em aberto'}
           </p>
         );
       })}
@@ -76,6 +78,10 @@ export default async function PayableHistory({ params }: { params: Promise<{ id:
               document_updated: 'Dados da nota atualizados',
               manual_created: 'Despesa criada',
               edited: 'Conta / pagamentos atualizados',
+              expense_linked: 'Despesa vinculada à nota',
+              merged_into_invoice: 'Conta unificada com a nota',
+              spreadsheet_import: 'Importação da planilha',
+              spreadsheet_review_required: 'Despesa encaminhada para identificação',
             }[e.kind] ?? e.kind}
           </strong>
           <p>{new Date(e.created_at).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}</p>

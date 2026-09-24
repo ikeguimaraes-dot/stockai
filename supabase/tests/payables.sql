@@ -64,11 +64,47 @@ set constraints all immediate;
 do $$ begin
  if not exists(select 1 from public.stockai_payables where receipt_id=current_setting('test.manual_receipt')::uuid and total_cents=1400) then raise exception 'Manual receipt did not sync final lines';end if;
 end $$;
+-- Linking moves the schedule to the canonical note account without duplicating the balance.
+select set_config('test.linktarget',(select id::text from public.stockai_payables where receipt_id=current_setting('test.manual_receipt')::uuid),true);
+select set_config('test.linkexpense',public.stockai_save_payable(null,0,gen_random_uuid(),jsonb_build_object('unit_id',current_setting('test.company'),'creditor_name','Sem documento','description','Despesa a vincular','document_number','manual-1','reference_month','2026-08','installments','[{"amount_cents":1400,"due_on":"2026-08-15","paid_without_date":true}]'::jsonb))::text,true);
+do $$ begin
+ begin perform public.stockai_link_payable(current_setting('test.manual_bill')::uuid,current_setting('test.linktarget')::uuid,1,1);raise exception 'Different totals accepted';exception when invalid_parameter_value then null;end;
+ begin perform public.stockai_link_payable(current_setting('test.linkexpense')::uuid,current_setting('test.linktarget')::uuid,99,1);raise exception 'Stale link accepted';exception when serialization_failure then null;end;
+end $$;
+select public.stockai_link_payable(current_setting('test.linkexpense')::uuid,current_setting('test.linktarget')::uuid,1,1);
+do $$ begin
+ if not exists(select 1 from public.stockai_payables where id=current_setting('test.linkexpense')::uuid and cancelled and merged_into_id=current_setting('test.linktarget')::uuid) then raise exception 'Duplicate balance remained';end if;
+ if not exists(select 1 from public.stockai_payable_installments where payable_id=current_setting('test.linktarget')::uuid and paid_without_date and paid_on is null and due_on='2026-08-15') then raise exception 'Payment or due date lost';end if;
+ begin perform public.stockai_save_payable(current_setting('test.linkexpense')::uuid,2,gen_random_uuid(),current_setting('test.manual_payload')::jsonb);raise exception 'Merged expense reopened';exception when invalid_parameter_value then null;end;
+ if (select count(*) from public.stockai_payable_events where payable_id=current_setting('test.linktarget')::uuid and kind='expense_linked')<>1 then raise exception 'Missing link audit';end if;
+end $$;
+reset role;
+insert into public.stockai_payable_import_rows(id,org_id,file_name,sheet_name,row_number,source_fingerprint,source_data) values('43333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa',current_setting('test.org')::uuid,'fixture.xlsx','MAIO',2,'fixture-import','{}');
+set local role authenticated;
+select public.stockai_resolve_payable_import('43333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa',current_setting('test.manual_payload')::jsonb,null);
+do $$ declare a uuid;b uuid;begin
+ select payable_id into a from public.stockai_payable_import_rows where id='43333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+ b:=public.stockai_resolve_payable_import('43333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa',current_setting('test.manual_payload')::jsonb,null);
+ if a is null or a<>b then raise exception 'Import not idempotent';end if;
+ if not exists(select 1 from public.stockai_payables where id=a and jsonb_array_length(import_references)=1) then raise exception 'Source provenance lost';end if;
+end $$;
+-- A held import reuses the original bill when corrected, never recreating its balance.
+reset role;
+update public.stockai_payables set on_hold=true where id=(select payable_id from public.stockai_payable_import_rows where id='43333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+update public.stockai_payable_import_rows set state='pending' where id='43333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+set local role authenticated;
+do $$ declare before_id uuid;after_id uuid;begin
+ select payable_id into before_id from public.stockai_payable_import_rows where id='43333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+ after_id:=public.stockai_resolve_payable_import('43333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa',current_setting('test.manual_payload')::jsonb,null);
+ if after_id<>before_id or exists(select 1 from public.stockai_payables where id=after_id and on_hold) then raise exception 'Held import not resumed safely';end if;
+end $$;
 reset role;
 insert into public.stockai_memberships(org_id,unit_id,user_id,role) values(current_setting('test.org')::uuid,current_setting('test.company')::uuid,'42222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa','operator');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','42222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
 do $$ begin
+ begin perform public.stockai_resolve_payable_import('43333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa',current_setting('test.manual_payload')::jsonb,null);raise exception 'Operator resolved import';exception when insufficient_privilege then null;end;
+ begin perform public.stockai_link_payable(current_setting('test.linkexpense')::uuid,current_setting('test.linktarget')::uuid,2,2);raise exception 'Operator linked';exception when insufficient_privilege then null;end;
  if exists(select 1 from public.stockai_payables where id=current_setting('test.bill')::uuid) then raise exception 'Operator finance read';end if;
  if exists(select 1 from public.stockai_payable_installments where payable_id=current_setting('test.bill')::uuid) then raise exception 'Operator installments read';end if;
  begin perform public.stockai_save_payable(null,0,gen_random_uuid(),current_setting('test.manual_payload')::jsonb);raise exception 'Operator finance write';exception when insufficient_privilege then null;end;
