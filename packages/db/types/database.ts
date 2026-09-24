@@ -42,11 +42,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "stockai_audit_events_org_id_unit_id_receipt_id_fkey"
-            columns: ["org_id", "unit_id", "receipt_id"]
+            foreignKeyName: "stockai_audit_receipt_history"
+            columns: ["org_id", "receipt_id"]
             isOneToOne: false
             referencedRelation: "stockai_receipts"
-            referencedColumns: ["org_id", "unit_id", "id"]
+            referencedColumns: ["org_id", "id"]
           },
         ]
       }
@@ -57,6 +57,7 @@ export type Database = {
           composes_cmv: boolean | null
           created_at: string
           id: string
+          internal_code: string
           is_active: boolean
           name: string
           org_id: string
@@ -67,6 +68,7 @@ export type Database = {
           composes_cmv?: boolean | null
           created_at?: string
           id?: string
+          internal_code?: string
           is_active?: boolean
           name: string
           org_id: string
@@ -77,6 +79,7 @@ export type Database = {
           composes_cmv?: boolean | null
           created_at?: string
           id?: string
+          internal_code?: string
           is_active?: boolean
           name?: string
           org_id?: string
@@ -170,11 +173,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "stockai_nfe_documents_org_id_unit_id_receipt_id_fkey"
-            columns: ["org_id", "unit_id", "receipt_id"]
+            foreignKeyName: "stockai_nfe_receipt_history"
+            columns: ["org_id", "receipt_id"]
             isOneToOne: false
             referencedRelation: "stockai_receipts"
-            referencedColumns: ["org_id", "unit_id", "id"]
+            referencedColumns: ["org_id", "id"]
           },
         ]
       }
@@ -428,6 +431,57 @@ export type Database = {
           },
         ]
       }
+      stockai_product_links: {
+        Row: {
+          factor: number
+          id: string
+          item_id: string
+          org_id: string
+          source_unit: string
+          supplier_code: string
+          supplier_tax_id: string
+          updated_at: string
+          updated_by: string
+        }
+        Insert: {
+          factor: number
+          id?: string
+          item_id: string
+          org_id: string
+          source_unit: string
+          supplier_code: string
+          supplier_tax_id: string
+          updated_at?: string
+          updated_by: string
+        }
+        Update: {
+          factor?: number
+          id?: string
+          item_id?: string
+          org_id?: string
+          source_unit?: string
+          supplier_code?: string
+          supplier_tax_id?: string
+          updated_at?: string
+          updated_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_product_links_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stockai_product_links_org_id_item_id_fkey"
+            columns: ["org_id", "item_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_items"
+            referencedColumns: ["org_id", "id"]
+          },
+        ]
+      }
       stockai_receipt_lines: {
         Row: {
           counted_qty: number | null
@@ -435,6 +489,7 @@ export type Database = {
           fiscal_total_cents: number | null
           id: string
           invoiced_qty: number
+          is_active: boolean
           item_id: string
           org_id: string
           payable_cents: number | null
@@ -450,6 +505,7 @@ export type Database = {
           fiscal_total_cents?: number | null
           id?: string
           invoiced_qty: number
+          is_active?: boolean
           item_id: string
           org_id: string
           payable_cents?: number | null
@@ -465,6 +521,7 @@ export type Database = {
           fiscal_total_cents?: number | null
           id?: string
           invoiced_qty?: number
+          is_active?: boolean
           item_id?: string
           org_id?: string
           payable_cents?: number | null
@@ -476,18 +533,72 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "stockai_lines_receipt_history"
+            columns: ["org_id", "receipt_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_receipts"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "stockai_lines_unit_history"
+            columns: ["org_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_units"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
             foreignKeyName: "stockai_receipt_lines_org_id_item_id_fkey"
             columns: ["org_id", "item_id"]
             isOneToOne: false
             referencedRelation: "stockai_items"
             referencedColumns: ["org_id", "id"]
           },
+        ]
+      }
+      stockai_receipt_revisions: {
+        Row: {
+          actor_id: string
+          after_data: Json
+          before_data: Json
+          created_at: string
+          id: string
+          org_id: string
+          reason: string
+          receipt_id: string
+          request_id: string
+          version: number
+        }
+        Insert: {
+          actor_id: string
+          after_data: Json
+          before_data: Json
+          created_at?: string
+          id?: string
+          org_id: string
+          reason: string
+          receipt_id: string
+          request_id: string
+          version: number
+        }
+        Update: {
+          actor_id?: string
+          after_data?: Json
+          before_data?: Json
+          created_at?: string
+          id?: string
+          org_id?: string
+          reason?: string
+          receipt_id?: string
+          request_id?: string
+          version?: number
+        }
+        Relationships: [
           {
-            foreignKeyName: "stockai_receipt_lines_org_id_unit_id_receipt_id_fkey"
-            columns: ["org_id", "unit_id", "receipt_id"]
+            foreignKeyName: "stockai_receipt_revisions_org_id_receipt_id_fkey"
+            columns: ["org_id", "receipt_id"]
             isOneToOne: false
             referencedRelation: "stockai_receipts"
-            referencedColumns: ["org_id", "unit_id", "id"]
+            referencedColumns: ["org_id", "id"]
           },
         ]
       }
@@ -504,8 +615,10 @@ export type Database = {
           invoice_series: string | null
           invoice_total_cents: number | null
           issued_at: string | null
+          notes: string
           org_id: string
           request_id: string
+          revision: number
           status: string
           supplier_id: string
           unit_id: string
@@ -522,8 +635,10 @@ export type Database = {
           invoice_series?: string | null
           invoice_total_cents?: number | null
           issued_at?: string | null
+          notes?: string
           org_id: string
           request_id: string
+          revision?: number
           status?: string
           supplier_id: string
           unit_id: string
@@ -540,8 +655,10 @@ export type Database = {
           invoice_series?: string | null
           invoice_total_cents?: number | null
           issued_at?: string | null
+          notes?: string
           org_id?: string
           request_id?: string
+          revision?: number
           status?: string
           supplier_id?: string
           unit_id?: string
@@ -769,6 +886,73 @@ export type Database = {
           },
         ]
       }
+      stockai_xml_inbox: {
+        Row: {
+          content_hash: string | null
+          created_at: string
+          filename: string
+          id: string
+          message: string
+          org_id: string | null
+          raw_xml: string
+          receipt_id: string | null
+          request_id: string
+          status: string
+          unit_id: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          content_hash?: string | null
+          created_at?: string
+          filename: string
+          id?: string
+          message?: string
+          org_id?: string | null
+          raw_xml: string
+          receipt_id?: string | null
+          request_id: string
+          status?: string
+          unit_id?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          content_hash?: string | null
+          created_at?: string
+          filename?: string
+          id?: string
+          message?: string
+          org_id?: string | null
+          raw_xml?: string
+          receipt_id?: string | null
+          request_id?: string
+          status?: string
+          unit_id?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stockai_xml_inbox_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_orgs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stockai_xml_inbox_org_id_unit_id_fkey"
+            columns: ["org_id", "unit_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_units"
+            referencedColumns: ["org_id", "id"]
+          },
+          {
+            foreignKeyName: "stockai_xml_inbox_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "stockai_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -809,7 +993,28 @@ export type Database = {
         Args: { p_lines: Json; p_order: string }
         Returns: undefined
       }
+      stockai_edit_receipt: {
+        Args: {
+          p_expected: number
+          p_header: Json
+          p_lines: Json
+          p_reason: string
+          p_receipt: string
+          p_request: string
+        }
+        Returns: undefined
+      }
       stockai_get_blind_receipt: { Args: { p_receipt: string }; Returns: Json }
+      stockai_identify_xml: {
+        Args: {
+          p_id: string
+          p_invoice: Json
+          p_lines: Json
+          p_remember?: boolean
+          p_unit: string
+        }
+        Returns: string
+      }
       stockai_import_nfe: {
         Args: {
           p_invoice: Json
@@ -821,6 +1026,10 @@ export type Database = {
         Returns: string
       }
       stockai_order_units: { Args: never; Returns: Json }
+      stockai_queue_xml: {
+        Args: { p_filename: string; p_request: string; p_xml: string }
+        Returns: string
+      }
       stockai_receive_order: {
         Args: {
           p_name: string
@@ -856,6 +1065,18 @@ export type Database = {
         }
         Returns: string
       }
+      stockai_save_product_code: {
+        Args: {
+          p_category?: string
+          p_cmv?: boolean
+          p_code: string
+          p_id?: string
+          p_name: string
+          p_org: string
+          p_uom: string
+        }
+        Returns: string
+      }
       stockai_stock_balances: {
         Args: never
         Returns: {
@@ -870,6 +1091,10 @@ export type Database = {
       stockai_submit_receipt_count: {
         Args: { p_counts: Json; p_receipt: string }
         Returns: string
+      }
+      stockai_xml_pending: {
+        Args: { p_id: string; p_message: string; p_unit?: string }
+        Returns: undefined
       }
     }
     Enums: {

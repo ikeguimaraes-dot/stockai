@@ -43,15 +43,17 @@ export async function getWorkspace() {
       minute: '2-digit',
     }),
     status: r.status as Receipt['status'],
-    lines: r.receipt_lines.map((l) => ({
-      id: l.id,
-      name: l.items?.name ?? 'Insumo',
-      uom: l.items?.base_uom as 'KG' | 'L' | 'UN',
-      invoiced: l.invoiced_qty,
-      counted: l.counted_qty,
-      priceCents: l.unit_price_cents,
-      fiscalTotalCents: l.fiscal_total_cents ?? undefined,
-    })),
+    lines: r.receipt_lines
+      .filter((l) => l.is_active)
+      .map((l) => ({
+        id: l.id,
+        name: l.items?.name ?? 'Insumo',
+        uom: l.items?.base_uom as 'KG' | 'L' | 'UN',
+        invoiced: l.invoiced_qty,
+        counted: l.counted_qty,
+        priceCents: l.unit_price_cents,
+        fiscalTotalCents: l.fiscal_total_cents ?? undefined,
+      })),
   }));
   return {
     receipts,

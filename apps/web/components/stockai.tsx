@@ -1145,6 +1145,11 @@ function ReceiptDialog({
           </p>
         )}
         <Badge status={receipt.status} />
+        {operatorHref && (
+          <Link className="text-button" href={`/notas/${receipt.id}`}>
+            Editar nota e ver histórico <ArrowRight size={15} />
+          </Link>
+        )}
       </div>
       {counting ? (
         <form onSubmit={submit}>

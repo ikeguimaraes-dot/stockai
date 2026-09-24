@@ -24,6 +24,8 @@ export const config = {
     '/operacao/:path*',
     '/empresas',
     '/produtos',
+    '/identificacao',
+    '/notas/:path*',
     '/login',
     '/api/:path*',
     '/conferencia/:path*',

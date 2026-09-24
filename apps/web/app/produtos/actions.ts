@@ -16,6 +16,7 @@ export async function saveCatalog(form: FormData): Promise<{ error: string | nul
       common.extend({
         kind: z.literal('product'),
         name: z.string().trim().min(1).max(120),
+        code: z.string().trim().min(1).max(60),
         uom: z.enum(['KG', 'L', 'UN']),
         categoryId: id,
         cmv: z.enum(['true', 'false']),
@@ -33,9 +34,10 @@ export async function saveCatalog(form: FormData): Promise<{ error: string | nul
             p_name: data.name,
             p_id: data.id || undefined,
           })
-        : await client.rpc('stockai_save_product', {
+        : await client.rpc('stockai_save_product_code', {
             p_org: data.orgId,
             p_name: data.name,
+            p_code: data.code,
             p_uom: data.uom,
             p_category: data.categoryId || undefined,
             p_cmv: data.cmv === 'true',
@@ -45,7 +47,7 @@ export async function saveCatalog(form: FormData): Promise<{ error: string | nul
       return {
         error:
           result.error.code === '23505'
-            ? 'Já existe um cadastro com esse nome neste grupo.'
+            ? 'Já existe um cadastro com esse nome ou código neste grupo.'
             : result.error.code === '42501'
               ? 'Seu acesso não permite alterar este cadastro.'
               : result.error.code === '22023'

@@ -43,7 +43,9 @@ export function ProductDirectory({
   const filtered = items.filter(
     (i) =>
       i.org_id === orgId &&
-      i.name.toLocaleLowerCase('pt-BR').includes(search.trim().toLocaleLowerCase('pt-BR')) &&
+      `${i.internal_code} ${i.name}`
+        .toLocaleLowerCase('pt-BR')
+        .includes(search.trim().toLocaleLowerCase('pt-BR')) &&
       (filter === 'all' ||
         (filter === 'pending' ? i.composes_cmv === null : String(i.composes_cmv) === filter)) &&
       (categoryFilter === 'all' ||
@@ -168,7 +170,7 @@ export function ProductDirectory({
                 aria-label="Buscar produtos"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Nome do produto"
+                placeholder="Código interno ou nome"
               />
             </label>
             <label>
@@ -265,6 +267,16 @@ export function ProductDirectory({
               </label>
               {editing && (
                 <>
+                  <label>
+                    Código interno
+                    <input
+                      name="code"
+                      aria-label="Código interno"
+                      required
+                      maxLength={60}
+                      defaultValue={editing === 'new' ? '' : editing.internal_code}
+                    />
+                  </label>
                   <label>
                     Unidade
                     <select
@@ -379,7 +391,7 @@ export function ProductDirectory({
                 </div>
                 <h2>{i.name}</h2>
                 <span>
-                  {i.base_uom} ·{' '}
+                  {i.internal_code} · {i.base_uom} ·{' '}
                   {categories.find((c) => c.id === i.category_id)?.name ?? 'Sem categoria'}
                 </span>
                 <p

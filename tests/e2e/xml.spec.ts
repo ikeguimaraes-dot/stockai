@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-test('database: XML preview, conversion, count, duplicate and wrong destination', async ({
-  page,
-}) => {
+test('database: durable XML inbox, learned mapping and receipt revisions', async ({ page }) => {
+  test.setTimeout(120000);
+  page.setDefaultTimeout(12000);
   test.skip(!process.env.STOCKAI_TEST_DATABASE, 'Local database only');
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -38,58 +38,6 @@ test('database: XML preview, conversion, count, duplicate and wrong destination'
   await page.getByLabel('CNPJ', { exact: true }).fill('12.345.678/0001-95');
   await page.getByRole('button', { name: 'Salvar empresa e continuar' }).click();
   await expect(page.getByRole('heading', { name: 'Tudo sob controle.' })).toBeVisible();
-  await page.getByRole('button', { name: 'Importar XML', exact: true }).click();
-  let dialog = page.getByRole('dialog');
-  await dialog.getByLabel('Arquivo XML da NF-e').setInputFiles('tests/fixtures/nfe.xml');
-  await expect(dialog.getByText('NF-e 123 · Série 1', { exact: true })).toBeVisible();
-  await expect(dialog.getByLabel('Empresa destinatária')).not.toHaveValue('');
-  await expect(
-    dialog.getByRole('button', { name: 'Importar e iniciar conferência' }),
-  ).toBeDisabled();
-  await dialog.getByLabel('Quantidade por embalagem do item 2').fill('6');
-  await expect(dialog.getByText('Total: 12 UN')).toBeVisible();
-  await page.screenshot({ path: '/tmp/stockai-xml-preview.png', fullPage: true });
-  await page.setViewportSize({ width: 390, height: 844 });
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
-  await dialog.evaluate((el) => {
-    el.scrollTop = 0;
-  });
-  await page.screenshot({ path: '/tmp/stockai-xml-mobile.png', fullPage: true });
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await dialog.getByRole('button', { name: 'Importar e iniciar conferência' }).click();
-  await expect(dialog.getByText('Conte primeiro. Compare depois.')).toBeVisible();
-  await expect(dialog.getByText('R$ 190,00', { exact: true })).toHaveCount(0);
-  await dialog.getByLabel('Quantidade de Arroz').fill('9');
-  await dialog.getByLabel('Quantidade de Leite').fill('12');
-  await dialog.getByRole('button', { name: 'Finalizar conferência' }).click();
-  await expect(dialog.getByText('R$ 12,00', { exact: true })).toBeVisible();
-  await expect(dialog.getByText('Mercadorias a pagar', { exact: true })).toBeVisible();
-  await dialog.getByRole('button', { name: 'Aprovar recebimento' }).click();
-  await expect(dialog.getByText('Recebimento registrado')).toBeVisible();
-  await page.reload();
-  await page.getByRole('button', { name: 'Importar XML', exact: true }).click();
-  dialog = page.getByRole('dialog');
-  await dialog.getByLabel('Arquivo XML da NF-e').setInputFiles('tests/fixtures/nfe.xml');
-  await expect(dialog.getByRole('alert')).toContainText('já foi importada');
-  await expect(
-    dialog.getByRole('button', { name: 'Importar e iniciar conferência' }),
-  ).toBeDisabled();
-  const wrong = readFileSync('tests/fixtures/nfe.xml', 'utf8').replace(
-    '<dest><CNPJ>12345678000195',
-    '<dest><CNPJ>99999999000191',
-  );
-  await dialog
-    .getByLabel('Arquivo XML da NF-e')
-    .setInputFiles({ name: 'wrong.xml', mimeType: 'application/xml', buffer: Buffer.from(wrong) });
-  await expect(dialog.getByRole('alert')).toContainText('não corresponde');
-  await expect(dialog.getByRole('button', { name: 'Importar e iniciar conferência' })).toHaveCount(
-    0,
-  );
-  // The same importer supports mixed batches from the Suppliers screen.
-  await dialog.getByRole('button', { name: 'Fechar', exact: true }).click();
-  await page.getByRole('button', { name: 'Fornecedores', exact: true }).click();
-  await page.getByRole('button', { name: 'Importar XML', exact: true }).click();
   const original = readFileSync('tests/fixtures/nfe.xml', 'utf8');
   function invoice(n: number) {
     const old = '35260911222333000181550010000001231123456783';
@@ -100,66 +48,102 @@ test('database: XML preview, conversion, count, duplicate and wrong destination'
     const key = base + String(remainder < 2 ? 0 : 11 - remainder);
     return original.replaceAll(old, key).replace('<nNF>123</nNF>', `<nNF>${n}</nNF>`);
   }
-  const first = invoice(124),
-    second = invoice(125).replace('<uCom>CX</uCom>', '<uCom>UN</uCom>');
-  await dialog
-    .getByLabel('Arquivo XML da NF-e')
-    .setInputFiles([
-      { name: 'ja-importada.xml', mimeType: 'application/xml', buffer: Buffer.from(original) },
-      { name: 'nota-124.xml', mimeType: 'application/xml', buffer: Buffer.from(first) },
-      { name: 'copia-124.xml', mimeType: 'application/xml', buffer: Buffer.from(first) },
-      { name: 'nota-125.xml', mimeType: 'application/xml', buffer: Buffer.from(second) },
-      { name: 'invalido.xml', mimeType: 'application/xml', buffer: Buffer.from('<invalid>') },
-      { name: 'outra-empresa.xml', mimeType: 'application/xml', buffer: Buffer.from(wrong) },
-      ...Array.from({ length: 21 }, (_, i) => ({
-        name: `repetida-${i}.xml`,
-        mimeType: 'application/xml',
-        buffer: Buffer.from(original),
-      })),
-    ]);
-  await expect(dialog.getByText('27 arquivos', { exact: true })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: /nota-125.xml/ })).toBeEnabled();
-  await expect(dialog.getByRole('button', { name: /ja-importada.xml/ })).toContainText('Duplicada');
-  await expect(dialog.getByRole('button', { name: /copia-124.xml/ })).toContainText('Duplicada');
-  await expect(dialog.getByRole('button', { name: /invalido.xml/ })).toContainText('Erro');
-  await expect(dialog.getByRole('button', { name: /outra-empresa.xml/ })).toContainText('Erro');
+  await page.getByRole('button', { name: 'Importar XML', exact: true }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Arquivo XML da NF-e').setInputFiles([
+    { name: 'nota-123.xml', mimeType: 'application/xml', buffer: Buffer.from(original) },
+    { name: 'invalido.xml', mimeType: 'application/xml', buffer: Buffer.from('<invalid>') },
+    {
+      name: 'outra-empresa.xml',
+      mimeType: 'application/xml',
+      buffer: Buffer.from(
+        original.replace('<dest><CNPJ>12345678000195', '<dest><CNPJ>99999999000191'),
+      ),
+    },
+    ...Array.from({ length: 22 }, (_, i) => ({
+      name: `copia-${i}.xml`,
+      mimeType: 'application/xml',
+      buffer: Buffer.from(original),
+    })),
+  ]);
+  await expect(dialog.getByRole('status')).toContainText('Envio concluído', { timeout: 60000 });
+  await expect(dialog.getByText('Salva para identificação', { exact: true })).toHaveCount(25);
+  await dialog.getByRole('link', { name: 'Abrir Identificação' }).click();
+  await expect(page).toHaveURL(/\/identificacao$/);
+  await page.reload();
+  await page.getByRole('button', { name: /nota-123.xml/ }).click();
+  await expect(page.getByText('NF-e 123 · Fornecedor XML Teste')).toBeVisible();
+  await page.getByRole('button', { name: 'Nova categoria', exact: true }).click();
+  await page.getByLabel('Nome', { exact: true }).fill('Alimentos');
+  await page.getByRole('button', { name: 'Salvar cadastro' }).click();
+  await expect(page.getByRole('status')).toContainText('Cadastro salvo');
+  for (const product of [
+    { name: 'Arroz interno', code: 'AR-01', unit: 'KG' },
+    { name: 'Leite interno', code: 'LE-01', unit: 'UN' },
+  ]) {
+    await page.getByRole('button', { name: 'Novo produto interno', exact: true }).click();
+    await page.getByLabel('Nome', { exact: true }).fill(product.name);
+    await page.getByLabel('Código interno', { exact: true }).fill(product.code);
+    await page.getByLabel('Unidade', { exact: true }).selectOption(product.unit);
+    await page.getByLabel('Categoria', { exact: true }).selectOption({ label: 'Alimentos' });
+    await page.getByLabel('Compõe CMV?', { exact: true }).selectOption('true');
+    await page.getByRole('button', { name: 'Salvar cadastro' }).click();
+    await expect(
+      page.getByRole('heading', { name: 'Novo produto interno', exact: true }),
+    ).toHaveCount(0);
+  }
+  await page
+    .getByLabel('Meu produto do item 1')
+    .selectOption({ label: 'AR-01 — Arroz interno (KG)' });
+  await page
+    .getByLabel('Meu produto do item 2')
+    .selectOption({ label: 'LE-01 — Leite interno (UN)' });
+  await page.getByLabel('Conversão do item 2').fill('6');
+  await page.screenshot({ path: '/tmp/stockai-identification-desktop.png', fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
-  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
-  await dialog.screenshot({ path: '/tmp/stockai-xml-batch-mobile.png' });
-  await dialog.getByRole('button', { name: 'Importar 1 nota(s) pronta(s)', exact: true }).click();
-  await expect(dialog.getByRole('button', { name: /nota-125.xml/ })).toContainText('Importada');
-  await dialog.getByRole('button', { name: /nota-124.xml/ }).click();
-  await dialog.getByLabel('Quantidade por embalagem do item 2').fill('6');
-  let failOnce = true;
-  await page.route('**/api/receipts/xml', async (route) => {
-    if (failOnce && route.request().postDataJSON()?.action === 'import') {
-      failOnce = false;
-      await route.fulfill({
-        status: 503,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Falha temporária de teste. Tente novamente.' }),
-      });
-    } else await route.continue();
-  });
-  await dialog.getByRole('button', { name: 'Importar 1 nota(s) pronta(s)', exact: true }).click();
-  await expect(dialog.getByRole('alert')).toContainText('Falha temporária');
-  await dialog.getByRole('button', { name: 'Importar 1 nota(s) pronta(s)', exact: true }).click();
-  await expect(dialog.getByText('0 prontos · 2 importados', { exact: true })).toBeVisible();
-  await expect(
-    dialog.getByRole('button', { name: 'Importar 0 nota(s) pronta(s)', exact: true }),
-  ).toBeDisabled();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '/tmp/stockai-identification-mobile.png', fullPage: true });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await dialog.screenshot({ path: '/tmp/stockai-xml-batch-desktop.png' });
-  const login = await fetch(`${url}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: { apikey: status.ANON_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+  await page.getByRole('button', { name: 'Vincular e lançar nota' }).click();
+  await expect(page.getByRole('link', { name: 'Abrir nota e editar' })).toBeVisible();
+  const href = await page.getByRole('link', { name: 'Abrir nota e editar' }).getAttribute('href');
+  const receiptId = href!.split('/').at(-1);
+  await page.goto('/operacao');
+  await page
+    .getByRole('button', { name: /Abrir recebimento de/ })
+    .first()
+    .click();
+  const receipt = page.getByRole('dialog');
+  await receipt.getByLabel('Quantidade de Arroz interno').fill('10');
+  await receipt.getByLabel('Quantidade de Leite interno').fill('12');
+  await receipt.getByRole('button', { name: 'Finalizar conferência' }).click();
+  await expect(receipt.getByText('Recebimento registrado')).toBeVisible();
+  await page.goto(href!);
+  await page.getByLabel('Quantidade na nota 1', { exact: true }).fill('8');
+  await page.getByLabel('Quantidade recebida 1', { exact: true }).fill('7');
+  await page.getByLabel('Motivo da alteração').fill('Corrigir quantidade recebida');
+  await page.getByRole('button', { name: 'Salvar alteração' }).click();
+  await expect(page.getByText('Recebimentos · Versão 1', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Versão 1 ·.*Corrigir quantidade/)).toBeVisible();
+  const xml = await page.request.get(`/api/notas/${receiptId}/xml`);
+  expect(xml.ok()).toBeTruthy();
+  expect(await xml.text()).toBe(original);
+  await page.screenshot({ path: '/tmp/stockai-note-editor.png', fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: '/tmp/stockai-note-editor-mobile.png', fullPage: true });
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/operacao');
+  await page.getByRole('button', { name: 'Importar XML', exact: true }).click();
+  await page.getByLabel('Arquivo XML da NF-e').setInputFiles({
+    name: 'nota-124.xml',
+    mimeType: 'application/xml',
+    buffer: Buffer.from(invoice(124)),
   });
-  const token = (await login.json()).access_token;
-  const rows = await fetch(`${url}/rest/v1/stockai_receipts?select=invoice_number`, {
-    headers: { apikey: status.ANON_KEY, Authorization: `Bearer ${token}` },
+  await expect(page.getByRole('dialog').getByText('Importada', { exact: true })).toBeVisible({
+    timeout: 20000,
   });
-  expect(
-    (await rows.json()).map((r: { invoice_number: string }) => r.invoice_number).sort(),
-  ).toEqual(['123', '124', '125']);
+  await page.getByRole('link', { name: 'Abrir Identificação' }).click();
+  await expect(page.getByRole('button', { name: /invalido.xml/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /outra-empresa.xml/ })).toBeVisible();
 });
