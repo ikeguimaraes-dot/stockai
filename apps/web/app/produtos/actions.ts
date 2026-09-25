@@ -13,7 +13,7 @@ export async function updateProductCode(itemId: string, code: string, expected: 
     .safeParse({ itemId, code, expected });
   if (!parsed.success) return { error: 'Informe um código de até 60 caracteres.' };
   const c = await serverClient();
-  const result = await c.rpc('stockai_update_internal_code', {
+  const result = await c.rpc('stockai_assign_product_code', {
     p_item: itemId,
     p_code: parsed.data.code,
     p_expected: expected,
@@ -27,10 +27,18 @@ export async function updateProductCode(itemId: string, code: string, expected: 
             ? result.error.message
             : 'Não foi possível alterar o código.',
     };
-  revalidatePath('/produtos');
+  revalidatePath('/produtos', 'layout');
   revalidatePath('/operacao');
+  revalidatePath('/identificacao');
   revalidatePath('/notas/[id]', 'page');
-  return { error: null };
+  const data = result.data as {
+    linked: boolean;
+    item_id: string;
+    code: string;
+    name: string;
+    links?: number;
+  };
+  return { error: null, assignment: data };
 }
 export async function saveCatalog(form: FormData): Promise<{ error: string | null; id?: string }> {
   const common = z.object({

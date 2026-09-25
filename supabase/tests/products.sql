@@ -22,11 +22,36 @@ do $$ begin
  if (select composes_cmv from public.stockai_items where id=current_setting('test.product')::uuid) is distinct from false then raise exception 'Classification edit lost'; end if;
  if (select sum(invoiced_qty*unit_price_cents) from public.stockai_receipt_lines where receipt_id=current_setting('test.receipt')::uuid)<>2100 then raise exception 'Classification changed invoice value';end if;
 end $$;
+
+select set_config('test.code',(select internal_code from public.stockai_items where id=current_setting('test.product')::uuid),true);
+select set_config('test.target',public.stockai_save_product_code(current_setting('test.org')::uuid,'Arroz destino','KG','DEST-01',null,true)::text,true);
+reset role;
+insert into public.stockai_product_links(org_id,supplier_tax_id,supplier_code,source_unit,item_id,factor,updated_by)
+values(current_setting('test.org')::uuid,'12345678000195','A','KG',current_setting('test.product')::uuid,2,'51111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+(current_setting('test.org')::uuid,'12345678000195','B','CX',current_setting('test.product')::uuid,10,'51111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+set local role authenticated;
+do $$ declare r jsonb; begin
+ begin perform public.stockai_assign_product_code(current_setting('test.product')::uuid,'DEST-01','stale');raise exception 'Stale edit allowed';exception when serialization_failure then null;end;
+ r:=public.stockai_assign_product_code(current_setting('test.product')::uuid,' dest-01 ',current_setting('test.code'));
+ if not (r->>'linked')::boolean or (r->>'links')::int<>2 then raise exception 'Wrong link result';end if;
+ if (select count(*) from public.stockai_product_links where item_id=current_setting('test.target')::uuid)<>2 then raise exception 'Missing links';end if;
+ if (select factor from public.stockai_product_links where item_id=current_setting('test.target')::uuid and supplier_code='B')<>10 then raise exception 'Conversion lost';end if;
+ if not exists(select 1 from public.stockai_receipt_lines where receipt_id=current_setting('test.receipt')::uuid and item_id=current_setting('test.product')::uuid) then raise exception 'Historical receipt changed';end if;
+ begin perform public.stockai_assign_product_code(current_setting('test.product')::uuid,'DEST-01',current_setting('test.code'));raise exception 'No links reported as success';exception when invalid_parameter_value then null;end;
+ begin perform public.stockai_assign_product_code(current_setting('test.target')::uuid,(select internal_code from public.stockai_items where org_id=current_setting('test.org')::uuid and name='Sabão'),'DEST-01');raise exception 'Unit mismatch allowed';exception when invalid_parameter_value then null;end;
+ r:=public.stockai_assign_product_code(current_setting('test.target')::uuid,'DEST-02','DEST-01');
+ if (r->>'linked')::boolean then raise exception 'New code did not rename';end if;
+end $$;
+select public.stockai_save_product_code(current_setting('test.org')::uuid,'Arroz destino','KG',current_setting('test.code'),null,true,current_setting('test.target')::uuid);
+do $$ begin
+ if (select count(*) from public.stockai_product_links where item_id=current_setting('test.product')::uuid)<>2 then raise exception 'Catalog code edit did not link';end if;
+end $$;
 select set_config('request.jwt.claim.sub','52222222-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
 select set_config('test.otherunit',public.stockai_register_company('Cat B','Cat B Ltda','11222333000181')::text,true);
 select set_config('test.otherorg',(select org_id::text from public.stockai_units where id=current_setting('test.otherunit')::uuid),true);
 do $$ begin
  if exists(select 1 from public.stockai_product_categories where org_id=current_setting('test.org')::uuid) then raise exception 'Cross-tenant category read';end if;
+ begin perform public.stockai_assign_product_code(current_setting('test.target')::uuid,'BAD','DEST-02');raise exception 'Cross tenant code write';exception when insufficient_privilege then null;end;
  begin perform public.stockai_save_category(current_setting('test.org')::uuid,'Intruder');raise exception 'Cross-tenant category write';exception when insufficient_privilege then null;end;
  begin perform public.stockai_save_product(current_setting('test.org')::uuid,'Arroz','KG',null,true,current_setting('test.product')::uuid);raise exception 'Cross-tenant product write';exception when insufficient_privilege then null;end;
  begin perform public.stockai_save_product(current_setting('test.otherorg')::uuid,'Intruder','UN',current_setting('test.category')::uuid,true);raise exception 'Cross-tenant category assignment';exception when invalid_parameter_value then null;end;
@@ -36,6 +61,7 @@ insert into public.stockai_memberships(org_id,unit_id,user_id,role) values(curre
 set local role authenticated;
 select set_config('request.jwt.claim.sub','53333333-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
 do $$ begin
+ begin perform public.stockai_assign_product_code(current_setting('test.target')::uuid,'BAD','DEST-02');raise exception 'Operator code write';exception when insufficient_privilege then null;end;
  begin perform public.stockai_save_category(current_setting('test.org')::uuid,'Operator');raise exception 'Operator category mutation';exception when insufficient_privilege then null;end;
  begin perform public.stockai_save_product(current_setting('test.org')::uuid,'Arroz','KG',null,true,current_setting('test.product')::uuid);raise exception 'Operator product mutation';exception when insufficient_privilege then null;end;
  begin perform stockai_private.resolve_item(current_setting('test.org')::uuid,'Bypass','KG','{}');raise exception 'Helper exposed';exception when insufficient_privilege then null;end;

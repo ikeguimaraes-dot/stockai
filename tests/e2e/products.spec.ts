@@ -134,6 +134,12 @@ test('database: internal codes, categories and CMV persist through edits', async
   await expect(renamed.getByRole('status')).toContainText('Vínculo salvo');
   const [savedLink] = await api(`stockai_product_links?id=eq.${link.id}`);
   expect(savedLink.item_id).toBe(target.id);
+  const targetCard = page.getByRole('article', { name: 'Papel toalhas', exact: true });
+  await targetCard.getByLabel('Código interno do produto').fill('pap-02');
+  await targetCard.getByRole('button', { name: 'Salvar código', exact: true }).click();
+  await expect(targetCard.getByRole('status')).toContainText('transferido(s) para PAP-02');
+  const [automaticLink] = await api(`stockai_product_links?id=eq.${link.id}`);
+  expect(automaticLink.item_id).toBe(original.id);
   const [savedItem] = await api(`stockai_items?id=eq.${original.id}`);
   expect(savedItem.name).toBe('Papel toalha folha');
   await page.setViewportSize({ width: 1440, height: 900 });

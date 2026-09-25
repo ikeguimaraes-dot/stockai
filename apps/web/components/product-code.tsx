@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { updateProductCode } from '@/app/produtos/actions';
 export function ProductCode({
@@ -15,6 +16,9 @@ export function ProductCode({
   const [value, setValue] = useState(code ?? '');
   const [saved, setSaved] = useState(code ?? '');
   const [busy, setBusy] = useState(false);
+  const [destination, setDestination] = useState<{ id: string; code: string; name: string } | null>(
+    null,
+  );
   const [message, setMessage] = useState('');
   useEffect(() => {
     setValue(code ?? '');
@@ -63,7 +67,22 @@ export function ProductCode({
               setMessage(result.error);
               return;
             }
-            const next = value.trim();
+            const assignment = result.assignment;
+            if (assignment?.linked) {
+              setDestination({
+                id: assignment.item_id,
+                code: assignment.code,
+                name: assignment.name,
+              });
+              setValue(saved);
+              setMessage(
+                `${assignment.links} vínculo(s) transferido(s) para ${assignment.code}. As próximas importações usarão esse produto.`,
+              );
+              router.refresh();
+              return;
+            }
+            setDestination(null);
+            const next = assignment?.code ?? value.trim();
             setSaved(next);
             setValue(next);
             setMessage('Código salvo.');
@@ -81,6 +100,13 @@ export function ProductCode({
         {busy ? 'Salvando…' : 'Salvar código'}
       </button>
       {message && <small role="status">{message}</small>}
+      {destination && (
+        <small>
+          <Link href={`/produtos/${destination.id}`}>
+            Abrir {destination.code} — {destination.name}
+          </Link>
+        </small>
+      )}
     </div>
   );
 }
